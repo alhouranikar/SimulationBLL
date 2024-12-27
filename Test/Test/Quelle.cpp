@@ -5,15 +5,24 @@
 #include <chrono>
 #include <ctime>
 
-class Zahl
+std::vector<long double> test (1000000);
+std::vector<long double> test2 (1000000);
+
+void set_vector(size_t x)
 {
-public:
-	Zahl(int Zehner, int Einer, double dez) : Zehn{ Zehner }, Eins{ Einer }, dez{ dez };
-	Zahl(double dez) : Zahl(0, 0, dez);
-private:
-	int Zehn, Eins;
-	double dez;
-};
+	test.at(x) = 1.2319821321376;
+}
+
+void set_vector()
+{
+	int y = 0;
+	std::cout << test2.size() << "\n";
+	while (y < test2.size())
+	{
+		test2.at(y) = 1.2319821321376;
+		++y;
+	}
+}
 
 int main()
 {
@@ -68,8 +77,23 @@ int main()
 	auto duration = end - start;
 	std::cout << "Die Laufzeit des Vektors betrug: " << (duration.count())/1e9 << std::endl;
 	*/
-	Zahl nummer1{ 10,1,0.11 };
-	ausg(3.3);
+	auto start = std::chrono::steady_clock::now();
+	int y = 0;
+	std::cout << test.size() << "\n";
+	while (y < test.size())
+	{
+		set_vector(y);
+		++y;
+	}
+	auto end = std::chrono::steady_clock::now();
+	auto temp = ((end - start).count()) / 1e9;
+	std::cout << "Die Laufzeit bei der Wiederholung der Funktion betrug: " << temp << "\n";
+	start = std::chrono::steady_clock::now();
+	set_vector();
+	end = std::chrono::steady_clock::now();
+	auto temp2 = ((end - start).count()) / 1e9;
+	std::cout << "Die Laufzeit bei der Wiederholung in der Funktion: " << ((end - start).count()) / 1e9 << "\n";
+	std::cout << "Das ist das " << temp / temp2 << "-fache." << "\n";
 	return 0;
 }
 
