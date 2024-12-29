@@ -20,6 +20,8 @@ extern long double glb_time;
 // Vectoren, die das Mesh wiedergeben, werden in create_mesh erstellt, damit die gewünschte Größe beim initialisieren angeben werden kann
 extern size_t size_x;
 extern size_t size_y;
+extern unsigned int nachbarn; // Anzahl der benachbarten Zellen
+extern 	vector<vector<long double>> temp;
 
 // Alle Variablen, die mit den einzelnen Frames zusammenhängen
 extern unsigned int current_posx;
@@ -43,7 +45,7 @@ void calc_pressure(); // Berechnet den Druck an jedem Ort zu einem Zeitpunkt
 
 void calc_vel(); // Berechnet die Geschwindigkeit anhand des Drucks
 
-vector<double> get_nval(string pv); // NUR FÜR TESTZWECKE, Ausgabe der benachbarten Werte
+vector<double> get_nval(); // NUR FÜR TESTZWECKE, Ausgabe der benachbarten Werte
 
 void ausgabe(); // NUR FÜR TESTZWECKE
 

@@ -10,6 +10,8 @@ size_t size_y;
 unsigned int current_posx;
 unsigned int current_posy;
 long double umax;
+unsigned int nachbarn;
+vector<vector<long double>> temp(size_x, vector<long double>(size_y)); // VERBESSERUNG: besser kopieren, Erstellung einer Kopie des Vektorfelds zum Zeitpunkt glb_time
 
 double dist; //	NUR FÜR TESTZWECKE
 
@@ -75,7 +77,19 @@ void calc_dt(double umax, long double dist)
 
 void calc_pressure()
 {
-	values.at(current_posx).at(current_posy).at(0) += 2;
+	vector<double> nval = get_nval();
+	for (int i = 0; i < size_x; ++i)
+	{
+		for (int j = 0; j < size_y; ++j)
+		{
+			temp.at(i).at(j) = values.at(i).at(j).at(0);
+		}
+	}
+	values.at(current_posx).at(current_posy).at(0) *= nachbarn; // Pressure-solver nach https://cg.informatik.uni-freiburg.de/intern/seminar/gridFluids_fluid-EulerParticle.pdf
+	for (int h = 0; h < nval.size(); ++h)
+	{ // Schleife über alle Nachbarn der Zelle, um den Druckgradienten der aktuellen Zelle zu berechnen
+		values.at(current_posx).at(current_posy).at(0) -= nval.at(h);
+	}
 	// Schleife über alle Punkte im Mesh, um Laufzeit zu sparen (ca. 1.5x schneller), nicht implementieren, da zwei Schleifen also auch für die Geschwindigkeit durchlaufen werden müssten
 }
 
@@ -93,27 +107,46 @@ void calc_vel()
 	umax = values.at(current_posx).at(current_posy).at(1);
 }
 
-vector<double> get_nval(string pv) // string für Geschwindigkeit / Druck-wechsel
+vector<double> get_nval() // IMMER TEMP AKTUALISIEREN, JE NACHDDEM, OB DRUCK ODER GESCHWINDIGKEIT
 {
-	int i = 0;
-	if (pv == "p")
-	{
-		i = 0;
-	}
-	else if (pv == "v")
-	{
-		i = 1;
+	vector<double> erg(4);
+	nachbarn = 4;
+	if (current_posx == 0)
+	{ // Überprüfung, ob die Simulation an einem Rand des Meshs angelangt ist, wenn ja, einen Nachbarn abziehen
+		erg.at(0) = 0;
+		--nachbarn;
 	}
 	else
 	{
-		cout << "Fehler";
-		return {};
+		erg.at(0) = temp.at(current_posx - 1).at(current_posy);
 	}
-	vector<double> erg(4);
-	erg.at(0) = values.at(current_posx - 1).at(current_posy).at(i);
-	erg.at(1) = values.at(current_posx).at(current_posy + 1).at(i);
-	erg.at(2) = values.at(current_posx + 1).at(current_posy).at(i);
-	erg.at(3) = values.at(current_posx).at(current_posy - 1).at(i); // Nachbarn werden im Uhrzeigersinn durchlaufen, Beginn im Norden
+	if (current_posy == size_y - 1)
+	{
+		erg.at(1) = 0;
+		--nachbarn;
+	}
+	else
+	{
+		erg.at(1) = temp.at(current_posx).at(current_posy + 1);
+	}
+	if (current_posx == size_x - 1)
+	{
+		erg.at(2) = 0;
+		--nachbarn;
+	}
+	else
+	{
+		erg.at(2) = temp.at(current_posx + 1).at(current_posy);
+	}
+	if (current_posy == 0)
+	{
+		erg.at(3) = 0;
+		--nachbarn;
+	}
+	else
+	{
+		erg.at(3) = temp.at(current_posx).at(current_posy - 1);
+	}
 	return erg;
 }
 
