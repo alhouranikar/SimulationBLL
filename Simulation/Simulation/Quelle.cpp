@@ -50,7 +50,7 @@ void set_initial()
 		}
 		umax = (frames.at(0).at(i).at(0).at(1) > umax) ? frames.at(0).at(i).at(0).at(1) : umax; // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
 		umax = (frames.at(0).at(i).at(0).at(2) > umax) ? frames.at(0).at(i).at(0).at(2) : umax;
-	} 
+	}
 	current_posx = 0;
 	current_posy = 0;
 }
@@ -82,7 +82,7 @@ void calc_dt(double umax, long double dist)
 
 void check_umax()
 {
-	
+
 }
 
 /*void call_frame(unsigned int posx, unsigned int posy)
