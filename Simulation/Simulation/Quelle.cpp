@@ -15,7 +15,7 @@ double past_posy;
 long double umax;
 unsigned int nachbarn;
 vector<vector<long double>> temp; // VERBESSERUNG: besser kopieren, Erstellung einer Kopie des Vektorfelds zum Zeitpunkt glb_time
-double dist; //	NUR FÜR TESTZWECKE
+double dist; 
 
 void set_initial()
 {
@@ -48,8 +48,8 @@ void set_initial()
 		{
 			frames.at(0).at(i).at(0).at(2) = 0;
 		}
-		umax = (frames.at(0).at(i).at(0).at(1) > umax) ? frames.at(0).at(i).at(0).at(1) : umax; // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
-		umax = (frames.at(0).at(i).at(0).at(2) > umax) ? frames.at(0).at(i).at(0).at(2) : umax;
+		check_umax(frames.at(0).at(i).at(0).at(1)); // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
+		check_umax(frames.at(0).at(i).at(0).at(2));
 	}
 	current_posx = 0;
 	current_posy = 0;
@@ -80,9 +80,13 @@ void calc_dt(double umax, long double dist)
 	return;
 }
 
-void check_umax()
+void check_umax(long double speed)
 {
-
+	if (speed > umax)
+	{
+		umax = speed;
+	}
+	return;
 }
 
 /*void call_frame(unsigned int posx, unsigned int posy)
@@ -266,10 +270,6 @@ vector<long double> interpolate()
 	// TODO: Fehler, da am Rand die x- und y-Positionen negativ sein müssten (Rand definieren, nach CFL-Bedingung kann ein Partikel max eine Zelle pro Zeitschritt vorankommen)
 	// für solid boundaries kann code bestehen bleiben, noch zusätzlich inflow / outflow edges
 
-	if (past_posx < 0 || past_posy < 0)
-	{
-		return { frames.at(akt_frame).at(current_posy).at(current_posy).at(1), frames.at(akt_frame).at(current_posy).at(current_posy).at(2) };
-	}
 	vector<long double> erg(2);
 	unsigned int untere_grx = floor(past_posx); // untere Grenze x
 	unsigned int obere_grx = untere_grx + 1;
