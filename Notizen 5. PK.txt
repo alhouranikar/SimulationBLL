@@ -1,0 +1,3 @@
+- unkonventionelle Anwendung
+- verschiedene Formen und einfache Anfangsbedingungen
+- finite difference method (vorläufig) 
