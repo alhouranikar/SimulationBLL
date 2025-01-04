@@ -26,7 +26,8 @@ extern unsigned int akt_frame;
 extern size_t size_x;
 extern size_t size_y;
 extern unsigned int nachbarn; // Anzahl der benachbarten Zellen
-extern 	vector<vector<long double>> temp;
+extern vector<vector<long double>> temp;
+extern vector<long double> temp_nval; // Vektor, welcher die einer Zelle benachbarten Werte speichert
 
 // Alle Variablen, die mit den einzelnen Frames zusammenhängen
 extern unsigned int current_posx;
@@ -46,7 +47,7 @@ void next_frame(); // Nächsten Frame aufrufen
 
 void calc_dt(double umax, long double dist); // errechnet den Zeitschritt anhand der CFL-Bedingung
 
-void check_umax(); // Überprüft, ob die maximale Geschwindigkeit übertroffen wird
+void check_umax(long double speed); // Überprüft, ob die maximale Geschwindigkeit übertroffen wird
 
 //void call_frame(unsigned int posx, unsigned int posy); // Ruft den nachfolgenden Frame auf
 
@@ -54,7 +55,9 @@ void calc_pressure(); // Berechnet den Druck an jedem Ort zu einem Zeitpunkt
 
 void calc_vel(); // Berechnet die Geschwindigkeit anhand des Drucks
 
-vector<long double> get_nval(int w); // NUR FÜR TESTZWECKE, Ausgabe der benachbarten Werte, w steht für verschiedene Werte: 0 = Druck, 1 = Geschw. in x-Richtung, 2 = Geschw. in y-Richtung
+vector<long double> get_nval(int w, int v); // NUR FÜR TESTZWECKE, Ausgabe der benachbarten Werte, w steht für verschiedene Werte: 0 = Druck, 1 = Geschw. in x-Richtung, 2 = Geschw. in y-Richtung
+
+long double calc_avg(int i); // Berechnung des Durchschnitts benachbarter Werte
 
 vector<long double> interpolate(); // Funktion, um die der Ursprungsposition der Teilchen nähesten Zelle zu finden
 
