@@ -1,6 +1,7 @@
 #include "Header.h"
 
 vector<vector<vector<vector<long double>>>> frames; // VERBESSERUNG: Aufspaltung der Liste, um Zugriffszeit zu minimieren
+vector<vector<bool>> is_boundary;
 unique_ptr<const double> start;
 unique_ptr<const double> ende;
 unique_ptr<double> time_stp;
@@ -282,10 +283,41 @@ vector<long double> interpolate()
 	// für solid boundaries kann code bestehen bleiben, noch zusätzlich inflow / outflow edges
 	
 	vector<long double> erg(2);
-	unsigned int untere_grx;
-	unsigned int obere_grx;
-	unsigned int untere_gry;
-	unsigned int obere_gry;
+	size_t untere_grx;
+	size_t obere_grx;
+	size_t untere_gry;
+	size_t obere_gry;
+
+	if (current_posx == 0)
+	{
+		past_posx = (past_posx > size_x - 1) || (past_posx < 0) ? current_posx : past_posx;
+		untere_grx = current_posx;
+		obere_grx = untere_grx;
+	}
+
+	if(current_posx == size_x - 1)
+	{
+		past_posx = (past_posx > size_x - 1) || (past_posx < 0) ? current_posx : past_posx;
+		untere_grx = current_posx;
+		obere_grx = untere_grx;
+	}
+	else
+	{
+		untere_grx = static_cast<size_t>(floor(current_posx));
+		obere_grx = untere_grx + 1;
+	}
+	if (current_posy == size_y - 1 || current_posy == 0)
+	{
+		past_posy = (past_posy > size_y - 1) ||(past_posy < 0) ? current_posy : past_posy;
+		untere_gry = current_posy;
+		obere_gry = untere_gry;
+	}
+	else
+	{
+		untere_gry = static_cast<size_t>(floor(past_posy));
+		obere_gry = untere_gry + 1;
+	}
+	/*
 	if (past_posx < 0)
 	{
 		untere_grx = 0; // untere Grenze x
@@ -293,9 +325,12 @@ vector<long double> interpolate()
 	}
 	else
 	{
-		untere_grx = floor(past_posx);
+		untere_grx = static_cast<size_t>(floor(past_posx));
 		obere_grx = untere_grx + 1;
 	}
+
+	// kann auch 10 sein, obwohl past_posx nicht außerhalb liegt
+
 	if (past_posy < 0)
 	{
 		untere_gry = 0;
@@ -303,7 +338,7 @@ vector<long double> interpolate()
 	}
 	else
 	{
-		untere_gry = floor(past_posy);
+		untere_gry = static_cast<size_t>(floor(past_posy));
 		obere_gry = untere_gry + 1;
 	}
 	if (past_posx > size_x - 1)
@@ -311,22 +346,12 @@ vector<long double> interpolate()
 		untere_grx = size_x - 1;
 		obere_grx = size_x - 1;
 	}
-	else
-	{
-		untere_grx = floor(past_posx);
-		obere_grx = untere_grx + 1;
-	}
 	if (past_posy > size_y - 1)
 	{
 		untere_gry = size_y - 1;
 		obere_gry = size_y - 1;
 	}
-	else
-	{
-		untere_gry = floor(past_posy);
-		obere_gry = untere_gry + 1;
-	}
-	cout << untere_grx << " " << untere_gry << endl;
+	*/
 	cout << obere_grx << " " << obere_gry << endl;
 	erg.at(0) = (1 - (past_posx - untere_grx) / dist) * frames.at(akt_frame).at(untere_grx).at(untere_gry).at(1) + ((past_posx - untere_grx) / dist) * frames.at(akt_frame).at(obere_grx).at(untere_gry).at(1); // interpolierte Geschwindigkeit in x-Richtung
 	erg.at(1) = (1 - (past_posy - untere_gry) / dist) * frames.at(akt_frame).at(untere_grx).at(untere_gry).at(2) + ((past_posy - untere_gry) / dist) * frames.at(akt_frame).at(untere_grx).at(obere_gry).at(2); // interpolierte Geschwindigkeit in y-Richtung

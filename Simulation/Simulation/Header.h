@@ -14,6 +14,7 @@
 using namespace std;
 
 extern vector<vector<vector<vector<long double>>>> frames; // Deklaration hier, damit set_initial keine Fehlermeldung gibt, dass der Vector noch nicht defniert ist
+extern vector<vector<bool>> is_boundary; // zeigt, welche Zellen im Mesh boundaries sind
 // Alle Variablen, die mit der Zeit zusammenhängen
 extern unique_ptr<const double> start;
 extern unique_ptr<const double> ende;
