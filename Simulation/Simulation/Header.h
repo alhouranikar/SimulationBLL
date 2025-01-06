@@ -14,7 +14,10 @@
 using namespace std;
 
 extern vector<vector<vector<vector<long double>>>> frames; // Deklaration hier, damit set_initial keine Fehlermeldung gibt, dass der Vector noch nicht defniert ist
-extern vector<vector<bool>> is_boundary; // zeigt, welche Zellen im Mesh boundaries sind
+extern vector<vector<bool>> is_boundary; // Vector, welcher sagt, ob Punkt boundary ist oder nicht, um Rechenzeit zu sparen
+extern vector<vector<bool>> is_solid; // zeigt, welche Zellen im Mesh boundaries sind
+extern vector<vector<bool>> is_inflow;
+extern vector<vector<bool>> is_outflow;
 // Alle Variablen, die mit der Zeit zusammenhängen
 extern unique_ptr<const double> start;
 extern unique_ptr<const double> ende;
@@ -64,7 +67,7 @@ vector<long double> interpolate(); // Funktion, um die der Ursprungsposition der
 
 void ausgabe(); // NUR FÜR TESTZWECKE
 
-vector<vector<vector<vector<long double>>>> operator+=(vector<vector<vector<vector<long double>>>>& vec1, vector<vector<long double>>& vec2); // Operatorüberladung, um Divergenz zum Wert zu addieren (NUR FÜR DRUCK, DA IMMER DER INDEX 0 ANGENOMMEN WIRD
+vector<vector<vector<vector<long double>>>>& operator+=(vector<vector<vector<vector<long double>>>>& vec1, vector<vector<long double>>& vec2); // Operatorüberladung, um Divergenz zum Wert zu addieren (NUR FÜR DRUCK, DA IMMER DER INDEX 0 ANGENOMMEN WIRD
 
 /*
 class UI
