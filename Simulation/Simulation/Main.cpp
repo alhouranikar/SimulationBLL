@@ -4,7 +4,10 @@ int main()
 {
 	set_initial();
 	ausgabe();
-	next_frame();
+	for (int o = 0; o < 20; ++o)
+	{
+		next_frame();
+	}
 	ausgabe();
 	
 	/*

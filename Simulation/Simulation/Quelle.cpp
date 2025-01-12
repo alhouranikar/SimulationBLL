@@ -8,6 +8,7 @@ vector<vector<bool>> is_outflow;
 unique_ptr<const double> start;
 unique_ptr<const double> ende;
 unique_ptr<double> time_stp;
+double glb_time;
 unsigned int frame_anz; // Anzahl der Frames
 unsigned int akt_frame; // aktueller Frame
 size_t size_x;
@@ -18,8 +19,7 @@ double past_posx;
 double past_posy;
 long double umax;
 unsigned int nachbarn;
-vector<vector<long double>> temp; // VERBESSERUNG: besser kopieren, Erstellung einer Kopie des Vektorfelds zum Zeitpunkt glb_time
-vector<vector<long double>> temp2;
+vector<vector<vector<long double>>> temp; // VERBESSERUNG: besser kopieren, Erstellung einer Kopie des Vektorfelds zum Zeitpunkt glb_time
 vector<long double> temp_nval;
 double dist; 
 
@@ -30,10 +30,10 @@ void set_initial()
 	// Beispiel
 	size_x = 10;
 	size_y = 10;
-	temp = vector<vector<long double>>(size_x, vector<long double>(size_y));
 	umax = 2.0; // MUSS SCHON VOR DER ERSTELLUNG DES MESHS BEKANNT SEIN, TEIL DER ANFANGSBEDINGUNGEN
 	start = make_unique<const double>(0.0);
 	ende = make_unique<const double>(1.0);
+	glb_time = 0.0;
 	akt_frame = 0;
 	dist = 0.043; // NUR FÜR TESTZWECKE
 	calc_dt(umax, dist); // Berechnung des Zeitschritts
@@ -48,8 +48,7 @@ void set_initial()
 			frames.at(0).at(i).at(j).at(1) = 1;
 			frames.at(0).at(i).at(j).at(2) = 1;
 		}
-		check_umax(frames.at(0).at(i).at(0).at(1)); // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
-		check_umax(frames.at(0).at(i).at(0).at(2));
+		check_umax(frames.at(akt_frame).at(current_posx).at(current_posy)); // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
 	}
 	is_inflow = vector<vector<bool>>(size_x, vector<bool>(size_y));
 	is_outflow = vector<vector<bool>>(size_x, vector<bool>(size_y));
@@ -78,16 +77,20 @@ void create_mesh()
 void next_frame()
 {
 	++akt_frame;
+	temp = frames.at(akt_frame);
 	current_posx = current_posy = 0;
-	temp = vector<vector<long double>>(size_x, vector<long double>(size_y, 0)); // VERBESSERUNG: effizientere Methode Vektor 0 zu setzen
 	calc_pressure();
-	temp = vector<vector<long double>>(size_x, vector<long double>(size_y, 0)); // VERBESSERUNG: effizientere Methode Vektor 0 zu setzen
-	temp2 = vector<vector<long double>>(size_x, vector<long double>(size_y, 0));
 	current_posx = current_posy = 0;
 	calc_vel();
-	temp = vector<vector<long double>>(size_x, vector<long double>(size_y, 0)); // VERBESSERUNG: effizientere Methode Vektor 0 zu setzen
 	// VERBESSERUNG: calc_pressure und calc_vel in eine Schleife zusammenfassen
-	calc_dt(umax, dist);
+	calc_dt(umax, dist); //	VERBESSERUNG: überprüfen, ob dt überhaupt geändert werden muss
+	glb_time += *time_stp;
+	if (((*ende) - glb_time) / (*time_stp) > frame_anz - akt_frame)
+	{ // wenn nach neuem Zeitschritt mehr Frames benötigt werden // VERBESSERUNG: (dringend) überprüfen, ob resize sich lohnt, wenn der neue Zeitschritt größer ist 
+		frame_anz = static_cast<int>(((*ende) - (*start)) / (*time_stp));
+		frames.resize(frame_anz);
+		ende = make_unique<const double>(frame_anz * (*time_stp));
+	}
 }
 
 void calc_dt(double umax, long double dist)
@@ -96,11 +99,15 @@ void calc_dt(double umax, long double dist)
 	return;
 }
 
-void check_umax(long double speed)
+void check_umax(vector<long double>& speed /* Frames - Vektor zur Zeit t eingeben */ )
 {
-	if (speed > umax)
+	if (speed.at(1) > umax)
 	{
-		umax = speed;
+		umax = speed.at(1);
+	}
+	if (speed.at(2) > umax)
+	{
+		umax = speed.at(2);
 	}
 	return;
 }
@@ -122,7 +129,7 @@ void calc_pressure()
 		{
 			current_posy = y;
 			frames.at(akt_frame).at(current_posx).at(current_posy).at(0) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(0);
-			vector<long double> nval = get_nval(0, 0);
+			vector<long double> nval = get_nval(0); // Fehler, akt_frame - 1 muss als temp gesetzt werden
 			temp.at(current_posx).at(current_posy) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(0) * nachbarn; // Pressure-solver nach https://cg.informatik.uni-freiburg.de/intern/seminar/gridFluids_fluid-EulerParticle.pdf, Frame vor dem aktuellen als Ursprungszustand
 			for (int h = 0; h < nval.size(); ++h)
 			{ // Schleife über alle Nachbarn der Zelle, um den Druckgradienten der aktuellen Zelle zu berechnen
@@ -146,17 +153,17 @@ void calc_vel()
 			current_posy = y;
 			if (is_boundary.at(current_posx).at(current_posy))
 			{
-				frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(1);
-				frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(2); // VERBESSERUNG: zeitlich veränderbare Anfgangsbedingungen, dann muss hier jeweils die neue Anfangsbedingungen zum Frame abgerufen werden
+				temp.at(current_posx).at(current_posy).at(1) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(1);
+				temp.at(current_posx).at(current_posy).at(2) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(2); // VERBESSERUNG: zeitlich veränderbare Anfgangsbedingungen, dann muss hier jeweils die neue Anfangsbedingungen zum Frame abgerufen werden
 				continue;
 			}
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(1);
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(2);
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) += 9.81 * (*time_stp); // Änderung der Geschwindigkeit aufgrund der Gravitation
+			temp.at(current_posx).at(current_posy).at(1) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(1);
+			temp.at(current_posx).at(current_posy).at(2) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(2);
+			temp.at(current_posx).at(current_posy).at(2) += 9.81 * (*time_stp); // Änderung der Geschwindigkeit aufgrund der Gravitation
+			check_umax(frames.at(akt_frame).at(current_posx).at(current_posy));
 		}
 	}
-	cout << frames.at(akt_frame).at(1).at(1).at(1) << endl;
-	for (int n = 0; n < 180; ++n)
+	for (int n = 0; n < 501; ++n)
 	{ // VERBESSSERUNG: statt Gauß-Seidel conjugate gradient verwenden
 		for (int x = 0; x < size_x; ++x)
 		{
@@ -168,28 +175,21 @@ void calc_vel()
 				{
 					continue;
 				}
-				temp_nval = get_nval(1, 0); // Alle benachbarten Werte der Geschw. speichern // zweiter Parameter-Wert ist egal
+				temp_nval = get_nval(1); // Alle benachbarten Werte der Geschw. speichern
 				double div = temp_nval.at(2) + temp_nval.at(1) - temp_nval.at(0) - temp_nval.at(3);
 				div *= 1.99;
-				if (temp_nval.at(0)) // VERBESSERUNG: if wegbekommen / aufräumen
-				{ // wenn der Eintrag eine Wand ist, ändert sich die Geschwindigkeit nicht
-					frames.at(akt_frame).at(current_posx).at(current_posy).at(1) += div / nachbarn; // + Divergenz, damit die Divergenz null ist
-				}
-				if (temp_nval.at(1))
-				{
-					frames.at(akt_frame).at(current_posx).at(current_posy + 1).at(2) -= div / nachbarn;
-				}
-				if (temp_nval.at(2))
-				{
-					frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(1) -= div / nachbarn;
-				}
-				if (temp_nval.at(3))
-				{
-					frames.at(akt_frame).at(current_posx).at(current_posy).at(2) += div / nachbarn;
-				}
+				// wenn der Eintrag eine Wand ist, ändert sich die Geschwindigkeit nicht
+				temp.at(current_posx).at(current_posy).at(1) += div / nachbarn; // + Divergenz, damit die Divergenz null ist
+				temp.at(current_posx).at(current_posy + 1).at(2) -= div / nachbarn;
+				temp.at(current_posx + 1).at(current_posy).at(1) -= div / nachbarn;
+				temp.at(current_posx).at(current_posy).at(2) += div / nachbarn;
+				check_umax(frames.at(akt_frame).at(current_posx).at(current_posy));
 			}
 		}
 	}
+
+	// TODO: check_umax und calc_dt so implementieren, dass Simulation nicht außerhalb des Rands sein kann
+	
 	for (int x = 0; x < size_x; ++x)
 	{ // Berechnung der Advektion
 		current_posx = x;
@@ -200,32 +200,22 @@ void calc_vel()
 			{
 				continue;
 			}
-			past_posx = current_posx - frames.at(akt_frame).at(current_posx).at(current_posy).at(1) * (*time_stp) - calc_avg(1) * (*time_stp); // Berechnung der vorherigen Position
-			cout << frames.at(akt_frame).at(1).at(1).at(1) << endl;
-			past_posy = current_posy - frames.at(akt_frame).at(current_posx).at(current_posy).at(2) * (*time_stp) - calc_avg(2) * (*time_stp);
+			past_posx = current_posx - temp.at(current_posx).at(current_posy).at(1) * (*time_stp) - calc_avg(2) * (*time_stp); // Berechnung der vorherigen Position
+			past_posy = current_posy - temp.at(current_posx).at(current_posy).at(2) * (*time_stp) - calc_avg(1) * (*time_stp);
 			vector<long double> geschw = interpolate();
-			temp.at(current_posx).at(current_posy) = geschw.at(0);
-			temp2.at(current_posx).at(current_posy) = geschw.at(1);
+			temp.at(current_posx).at(current_posy).at(1) = geschw.at(0);
+			temp.at(current_posx).at(current_posy).at(2) = geschw.at(1);
 			check_umax(temp.at(current_posx).at(current_posy));
-			check_umax(temp2.at(current_posx).at(current_posy));
 			// nach cg.informatik, inakkurat // VERBESSERUNG: Runge-Kutta oder besser upwind
 		}
 	}
-	for (int q = 0; q < size_x; ++q)
-	{
-		for (int w = 0; w < size_y; ++w)
-		{
-			frames.at(akt_frame).at(q).at(w).at(1) = temp.at(q).at(w);
-			frames.at(akt_frame).at(q).at(w).at(2) = temp2.at(q).at(w);
-		}
-	}
+	frames.at(akt_frame) = temp;
 }
 
-vector<long double> get_nval(int w, int v) // IMMER TEMP AKTUALISIEREN, JE NACHDDEM, OB DRUCK ODER GESCHWINDIGKEIT // zweiter Parameter steht für Value in frames
+vector<long double> get_nval(int w) // IMMER TEMP AKTUALISIEREN, JE NACHDDEM, OB DRUCK ODER GESCHWINDIGKEIT // zweiter Parameter steht für Value in frames
 {
 	vector<long double> erg(4);
 	nachbarn = 4;
-	unsigned int frm = akt_frame; 
 	switch (w)
 	{
 	case 1: // Geschw. ist gesucht (hier x- und y-Richtung zusammen, um if-else nicht wiederholen zu müssen
@@ -233,10 +223,11 @@ vector<long double> get_nval(int w, int v) // IMMER TEMP AKTUALISIEREN, JE NACHD
 		// TODO: Umgang mit solid boundaaries
 		// vorher checken, ob Punkt boundary ist
 
-		erg.at(0) = frames.at(frm).at(current_posx).at(current_posy).at(1);
-		erg.at(1) = frames.at(frm).at(current_posx).at(current_posy + 1).at(2);
-		erg.at(2) = frames.at(frm).at(current_posx + 1).at(current_posy).at(1);
-		erg.at(3) = frames.at(frm).at(current_posx).at(current_posy).at(2);
+		// ist möglich, da hier frm = akt_frame ist, siehe temp (Definition)
+		erg.at(0) = temp.at(current_posx).at(current_posy).at(1);
+		erg.at(1) = temp.at(current_posx).at(current_posy + 1).at(2);
+		erg.at(2) = temp.at(current_posx + 1).at(current_posy).at(1);
+		erg.at(3) = temp.at(current_posx).at(current_posy).at(2);
 		if (is_boundary.at(current_posx - 1).at(current_posy))
 		{
 			erg.at(0) = 0;
@@ -297,14 +288,11 @@ vector<long double> get_nval(int w, int v) // IMMER TEMP AKTUALISIEREN, JE NACHD
 		*/
 		break;
 	case 0: // VERBESSERUNG: beide Fälle in einem vereinen
-		if (v == 0)
-		{ // Wenn pressure gesucht ist, ist nicht der vorherige Frame wichtig, sondern der aktuelle
-		--frm;
-		}
-		erg.at(0) = frames.at(frm).at(current_posx).at(current_posy).at(1);
-		erg.at(1) = frames.at(frm).at(current_posx).at(current_posy + 1).at(2);
-		erg.at(2) = frames.at(frm).at(current_posx + 1).at(current_posy).at(1);
-		erg.at(3) = frames.at(frm).at(current_posx).at(current_posy).at(2);
+		// Wenn pressure gesucht ist, ist nicht der vorherige Frame wichtig, sondern der aktuelle
+		erg.at(0) = temp.at(current_posx).at(current_posy).at(1);
+		erg.at(1) = temp.at(current_posx).at(current_posy + 1).at(2);
+		erg.at(2) = temp.at(current_posx + 1).at(current_posy).at(1);
+		erg.at(3) = temp.at(current_posx).at(current_posy).at(2);
 		if (is_boundary.at(current_posx - 1).at(current_posy))
 		{
 			erg.at(0) = 0;
@@ -332,8 +320,73 @@ vector<long double> get_nval(int w, int v) // IMMER TEMP AKTUALISIEREN, JE NACHD
 
 long double calc_avg(int i)
 {
-	vector<long double> nval = get_nval(0, i);
-	return (nval.at(0) + nval.at(1) + nval.at(2) + nval.at(3)) / nachbarn;
+	vector<long double> erg(4);
+	nachbarn = 4;
+	switch (i)
+	{
+	case 1: // durchschnittlichen x-Geschwindigkeitswerte werden ermittelt
+		erg.at(0) = temp.at(current_posx).at(current_posy).at(1);
+		erg.at(1) = temp.at(current_posx + 1).at(current_posy).at(1);
+		erg.at(2) = temp.at(current_posx).at(current_posy - 1).at(1);
+		erg.at(3) = temp.at(current_posx + 1).at(current_posy - 1).at(1);
+		if (is_boundary.at(current_posx - 1).at(current_posy))
+		{
+			erg.at(0) = 0;
+			--nachbarn;
+		}
+		if (is_boundary.at(current_posx).at(current_posy + 1))
+		{
+			erg.at(1) = 0;
+			--nachbarn;
+		}
+		if (is_boundary.at(current_posx + 1).at(current_posy))
+		{
+			erg.at(2) = 0;
+			--nachbarn;
+		}
+		if (is_boundary.at(current_posx).at(current_posy - 1))
+		{
+			erg.at(3) = 0;
+			--nachbarn;
+		}
+		break;
+	case 2: // hier y-Richtung
+		for (int o = 0; o < size_x; ++o)
+		{
+			for (int k = 0; k < size_y; ++k)
+			{
+				cout << temp.at(o).at(k).at(2) << " ";
+			}
+			cout << endl;
+		}
+		erg.at(0) = temp.at(current_posx - 1).at(current_posy).at(2);
+		erg.at(1) = temp.at(current_posx - 1).at(current_posy + 1).at(2);
+		erg.at(2) = temp.at(current_posx).at(current_posy).at(2);
+		erg.at(3) = temp.at(current_posx).at(current_posy + 1).at(2);
+		if (is_boundary.at(current_posx - 1).at(current_posy))
+		{
+			erg.at(0) = 0;
+			--nachbarn;
+		}
+		if (is_boundary.at(current_posx - 1).at(current_posy + 1))
+		{
+			erg.at(1) = 0;
+			--nachbarn;
+		}
+		if (is_boundary.at(current_posx).at(current_posy))
+		{
+			erg.at(2) = 0;
+			--nachbarn;
+		}
+		if (is_boundary.at(current_posx).at(current_posy + 1))
+		{
+			erg.at(3) = 0;
+			--nachbarn;
+		}
+		break;
+	}
+	cout << (erg.at(0) + erg.at(1) + erg.at(2) + erg.at(3)) / nachbarn << endl;
+	return (erg.at(0) + erg.at(1) + erg.at(2) + erg.at(3)) / nachbarn;
 }
 
 vector<long double> interpolate()
@@ -351,6 +404,7 @@ vector<long double> interpolate()
 	obere_grx = untere_grx + 1;
 	untere_gry = floor(past_posy); // Änderung aus Informatik, bitte testen
 	obere_gry = untere_gry + 1;
+	cout << untere_grx << endl;
 	erg.at(0) = (1 - (past_posx - untere_grx) / dist) * frames.at(akt_frame).at(untere_grx).at(untere_gry).at(1) + ((past_posx - untere_grx) / dist) * frames.at(akt_frame).at(obere_grx).at(untere_gry).at(1); // interpolierte Geschwindigkeit in x-Richtung
 	erg.at(1) = (1 - (past_posy - untere_gry) / dist) * frames.at(akt_frame).at(untere_grx).at(untere_gry).at(2) + ((past_posy - untere_gry) / dist) * frames.at(akt_frame).at(untere_grx).at(obere_gry).at(2); // interpolierte Geschwindigkeit in y-Richtung
 	return erg;
@@ -358,21 +412,21 @@ vector<long double> interpolate()
 
 void ausgabe()
 {
-	std::cout << "Druckfeld zum Zeitpunkt " << akt_frame * (*time_stp) << ":\n";
-	for (int x = 0; x < size_x; ++x)
-	{
-		for (int y = 0; y < size_y; ++y)
-		{
-			cout << frames.at(akt_frame).at(x).at(y).at(0) << " ";
-		}
-		cout << "\n";
-	}
-	std::cout << "Geschwindigkeitsfeld zum Zeitpunkt " << akt_frame * (*time_stp) << ":\n";
+	std::cout << "Geschwindigkeit in x-Richtung zum Zeitpunkt " << akt_frame * (*time_stp) << ":\n";
 	for (int x = 0; x < size_x; ++x)
 	{
 		for (int y = 0; y < size_y; ++y)
 		{
 			cout << frames.at(akt_frame).at(x).at(y).at(1) << " ";
+		}
+		cout << "\n";
+	}
+	std::cout << "Geschwindigkeit in y-Richtung zum Zeitpunkt " << akt_frame * (*time_stp) << ":\n";
+	for (int x = 0; x < size_x; ++x)
+	{
+		for (int y = 0; y < size_y; ++y)
+		{
+			cout << frames.at(akt_frame).at(x).at(y).at(2) << " ";
 		}
 		cout << "\n";
 	}
