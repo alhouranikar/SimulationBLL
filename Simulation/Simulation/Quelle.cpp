@@ -56,14 +56,18 @@ void set_initial()
 	is_boundary = vector<vector<bool>>(size_x, vector<bool>(size_y));
 	for (int i = 0; i < size_x; ++i)
 	{ // size_x und size_y müssen gleich sein
-		is_solid.at(i).at(0) = true;
-		is_boundary.at(i).at(0) = true;
-		is_inflow.at(0).at(i) = true;
+		is_solid.at(0).at(i) = true;
+		frames.at(0).at(0).at(i).at(1) = 0;
+		frames.at(0).at(0).at(i).at(2) = 0;
 		is_boundary.at(0).at(i) = true;
-		is_solid.at(i).at(size_y - 1) = true;
+		is_inflow.at(i).at(0) = true;
+		is_boundary.at(i).at(0) = true;
+		is_solid.at(size_x - 1).at(i) = true;
+		frames.at(0).at(size_x-1).at(i).at(1) = 0;
+		frames.at(0).at(size_x-1).at(i).at(2) = 0;
 		is_boundary.at(i).at(size_y - 1) = true;
-		is_outflow.at(size_x - 1).at(i) = true;
-		is_boundary.at(size_x - 1).at(i) = true;
+		is_outflow.at(i).at(size_y-1) = true;
+		is_boundary.at(i).at(size_y-1) = true;
 	}
 	current_posx = 0;
 	current_posy = 0;
@@ -263,22 +267,18 @@ vector<long double> get_nval(int w) // IMMER TEMP AKTUALISIEREN, JE NACHDDEM, OB
 		erg.at(3) = frames.at(akt_frame).at(current_posx).at(current_posy).at(2);
 		if (is_solid.at(current_posx - 1).at(current_posy))
 		{
-			erg.at(0) = 0;
 			--nachbarn;
 		}
 		if (is_solid.at(current_posx).at(current_posy + 1))
 		{
-			erg.at(1) = 0;
 			--nachbarn;
 		}
 		if (is_solid.at(current_posx + 1).at(current_posy))
 		{
-			erg.at(2) = 0;
 			--nachbarn;
 		}
 		if (is_solid.at(current_posx).at(current_posy - 1))
 		{
-			erg.at(3) = 0;
 			--nachbarn;
 		}
 		/*
