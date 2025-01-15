@@ -35,8 +35,8 @@ extern vector<vector<vector<long double>>> temp;
 extern vector<long double> temp_nval; // Vektor, welcher die einer Zelle benachbarten Werte speichert
 
 // Alle Variablen, die mit den einzelnen Frames zusammenhängen
-extern unsigned int current_posx;
-extern unsigned int current_posy;
+extern int current_posx;
+extern int current_posy;
 extern double past_posx;
 extern double past_posy;
 extern long double umax;
