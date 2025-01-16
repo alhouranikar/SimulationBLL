@@ -37,8 +37,10 @@ extern vector<long double> temp_nval; // Vektor, welcher die einer Zelle benachb
 // Alle Variablen, die mit den einzelnen Frames zusammenhängen
 extern int current_posx;
 extern int current_posy;
-extern double past_posx;
-extern double past_posy;
+extern double past_posx_x; // vorherige x-Position der Geschwindigkeit in x-Richtung
+extern double past_posy_x;
+extern double past_posx_y; // vroherige x-Position der Geschwindigkeit in y-Richtung
+extern double past_posy_y;
 extern long double umax;
 
 

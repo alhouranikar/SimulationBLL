@@ -15,8 +15,10 @@ size_t size_x;
 size_t size_y;
 int current_posx;
 int current_posy;
-double past_posx;
-double past_posy;
+double past_posx_x;
+double past_posy_x;
+double past_posx_y;
+double past_posy_y;
 long double umax;
 unsigned int nachbarn;
 vector<vector<vector<long double>>> temp; // VERBESSERUNG: besser kopieren, Erstellung einer Kopie des Vektorfelds zum Zeitpunkt glb_time
@@ -47,6 +49,10 @@ void set_initial()
 		{
 			frames.at(0).at(i).at(j).at(1) = 0;
 			frames.at(0).at(i).at(j).at(2) = 1;
+			if (j == 0)
+			{
+				frames.at(0).at(i).at(j).at(2) = 1;
+			}
 		}
 		check_umax(frames.at(akt_frame).at(current_posx).at(current_posy)); // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
 	}
@@ -202,8 +208,30 @@ void calc_vel()
 			}
 		}
 	}
+	for (int x = 0; x < size_x; ++x)
+	{ 
+		// TODO: bug bei Advektion beheben
+		current_posx = x;
+		for (int y = 0; y < size_y; ++y)
+		{
+			current_posy = y;
+			if (is_boundary.at(current_posx).at(current_posy))
+			{
+				continue;
+			}
+			past_posx_x = current_posx - frames.at(akt_frame).at(current_posx).at(current_posy).at(1) * (*time_stp); // vorherige Position bei dem Teilchen, welches am Ort der x-Geschwindigkeit ist
+			past_posy_x = current_posy + 0.5 /*da x- und y-Geschwindigkeit versetzt gespeichert sind*/ - calc_avg(2) * (*time_stp);
+			past_posx_y = current_posx - 0.5 - calc_avg(1) * (*time_stp);
+			past_posy_y = current_posy - frames.at(akt_frame).at(current_posx).at(current_posy).at(2) * (*time_stp); // hier in y-Richtung
+			cout << past_posy_y << " ";
+			vector<long double> erg = interpolate(); // interpolierte Geschwindigkeit an der vorherigen Position
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = erg.at(0);
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = erg.at(1);
+		}
+		cout << endl;
+	}
 
-	// TODO: Advektion hinzufügen und jetzigen div = 0 -solver durch \nabla \cdot p \cdot \Delta t / \rho ersetzen
+	// TODO: jetzigen div = 0 -solver durch \nabla \cdot p \cdot \Delta t / \rho ersetzen
 
 }
 
@@ -350,21 +378,21 @@ long double calc_avg(int i)
 	switch (i)
 	{
 	case 1: // durchschnittlichen x-Geschwindigkeitswerte werden ermittelt
-		erg.at(0) = temp.at(current_posx).at(current_posy).at(1);
-		erg.at(1) = temp.at(current_posx + 1).at(current_posy).at(1);
-		erg.at(2) = temp.at(current_posx).at(current_posy - 1).at(1);
-		erg.at(3) = temp.at(current_posx + 1).at(current_posy - 1).at(1);
-		if (is_solid.at(current_posx - 1).at(current_posy))
+		erg.at(0) = frames.at(akt_frame).at(current_posx).at(current_posy).at(1);
+		erg.at(1) = frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(1);
+		erg.at(2) = frames.at(akt_frame).at(current_posx + 1).at(current_posy - 1).at(1);
+		erg.at(3) = frames.at(akt_frame).at(current_posx).at(current_posy - 1).at(1);
+		if (is_solid.at(current_posx).at(current_posy))
 		{
 			erg.at(0) = 0;
 			--nachbarn;
 		}
-		if (is_solid.at(current_posx).at(current_posy + 1))
+		if (is_solid.at(current_posx + 1).at(current_posy))
 		{
 			erg.at(1) = 0;
 			--nachbarn;
 		}
-		if (is_solid.at(current_posx + 1).at(current_posy))
+		if (is_solid.at(current_posx + 1).at(current_posy - 1))
 		{
 			erg.at(2) = 0;
 			--nachbarn;
@@ -376,10 +404,10 @@ long double calc_avg(int i)
 		}
 		break;
 	case 2: // hier y-Richtung
-		erg.at(0) = temp.at(current_posx - 1).at(current_posy).at(2);
-		erg.at(1) = temp.at(current_posx - 1).at(current_posy + 1).at(2);
-		erg.at(2) = temp.at(current_posx).at(current_posy).at(2);
-		erg.at(3) = temp.at(current_posx).at(current_posy + 1).at(2);
+		erg.at(0) = frames.at(akt_frame).at(current_posx - 1).at(current_posy).at(2);
+		erg.at(1) = frames.at(akt_frame).at(current_posx - 1).at(current_posy + 1).at(2);
+		erg.at(2) = frames.at(akt_frame).at(current_posx).at(current_posy + 1).at(2);
+		erg.at(3) = frames.at(akt_frame).at(current_posx).at(current_posy).at(2);
 		if (is_solid.at(current_posx - 1).at(current_posy))
 		{
 			erg.at(0) = 0;
@@ -390,14 +418,14 @@ long double calc_avg(int i)
 			erg.at(1) = 0;
 			--nachbarn;
 		}
-		if (is_solid.at(current_posx).at(current_posy))
-		{
-			erg.at(2) = 0;
-			--nachbarn;
-		}
 		if (is_solid.at(current_posx).at(current_posy + 1))
 		{
 			erg.at(3) = 0;
+			--nachbarn;
+		}
+		if (is_solid.at(current_posx).at(current_posy))
+		{
+			erg.at(2) = 0;
 			--nachbarn;
 		}
 		break;
@@ -412,33 +440,58 @@ vector<long double> interpolate()
 	// für solid boundaries kann code bestehen bleiben, noch zusätzlich inflow / outflow edges
 	
 	vector<long double> erg(2);
-	size_t untere_grx;
-	size_t obere_grx;
-	size_t untere_gry;
-	size_t obere_gry;
-	untere_grx = floor(past_posx);
-	obere_grx = untere_grx + 1;
-	if (past_posx < 0)
+	size_t untere_grx_x;
+	size_t untere_gry_x;
+	size_t obere_grx_x;
+	size_t obere_gry_x;
+	size_t untere_grx_y;
+	size_t untere_gry_y;
+	size_t obere_grx_y;
+	size_t obere_gry_y;
+	untere_grx_x = floor(past_posx_x);
+	untere_gry_x = floor(past_posy_x);
+	obere_grx_x = untere_grx_x + 1;
+	obere_gry_x = untere_gry_x + 1;
+	untere_grx_y = floor(past_posx_y);
+	untere_gry_y = floor(past_posy_y);
+	obere_grx_y = untere_grx_y + 1;
+	obere_gry_y = untere_gry_y + 1;
+	// Wenn etwas von der x-Geschwindigkeit außerhalb der boundary ist
+	if (past_posx_x < 0)
 	{
-		untere_grx = obere_grx = 0;
+		untere_grx_x = obere_grx_x = 0;
 	}
-	else if (past_posx > size_x - 1)
+	else if (past_posx_x > size_x - 1)
 	{
-		untere_grx = obere_grx = size_x - 1;
+		untere_grx_x = obere_grx_x = size_x - 1;
 	}
-	untere_gry = floor(past_posy);
-	obere_gry = untere_gry + 1;
-	if (past_posy < 0)
+	if (past_posy_x < 0)
 	{
-		untere_gry = obere_gry = 0;
+		untere_gry_x = obere_gry_x = 0;
 	}
-	else if (past_posy > size_y - 1)
+	else if (past_posy_x > size_y - 1)
 	{
-		untere_gry = obere_gry = size_y - 1;
+		untere_gry_x = obere_gry_x = size_y - 1;
 	}
-	
-	erg.at(0) = (1 - (past_posx - untere_grx) / dist) * frames.at(akt_frame).at(untere_grx).at(untere_gry).at(1) + ((past_posx - untere_grx) / dist) * frames.at(akt_frame).at(obere_grx).at(untere_gry).at(1); // interpolierte Geschwindigkeit in x-Richtung
-	erg.at(1) = (1 - (past_posy - untere_gry) / dist) * frames.at(akt_frame).at(untere_grx).at(untere_gry).at(2) + ((past_posy - untere_gry) / dist) * frames.at(akt_frame).at(untere_grx).at(obere_gry).at(2); // interpolierte Geschwindigkeit in y-Richtung
+	// hier y-Geschwindigkeit:
+	if (past_posx_y < 0)
+	{
+		untere_grx_y = obere_grx_y = 0;
+	}
+	else if (past_posx_y > size_x - 1)
+	{
+		untere_grx_y = obere_grx_y = size_x - 1;
+	}
+	if (past_posy_y < 0)
+	{
+		untere_gry_y = obere_gry_y = 0;
+	}
+	else if (past_posy_y > size_y - 1)
+	{
+		untere_gry_y = obere_gry_y = size_y - 1;
+	}
+	erg.at(0) = (1 - (past_posx_x - untere_grx_x) / dist) * frames.at(akt_frame - 1).at(untere_grx_x).at(untere_gry_x).at(1) + ((past_posx_x - untere_grx_x) / dist) * frames.at(akt_frame - 1).at(obere_grx_x).at(untere_gry_x).at(1); // interpolierte Geschwindigkeit in x-Richtung von x-Geschwindigkeit
+	erg.at(1) = (1 - (past_posy_y - untere_gry_y) / dist) * frames.at(akt_frame - 1).at(untere_grx_y).at(untere_gry_y).at(2) + ((past_posy_y - untere_gry_y) / dist) * frames.at(akt_frame - 1).at(untere_grx_y).at(obere_gry_y).at(2); // interpolierte Geschwindigkeit in y-Richtung von y-Geschwindigkeit
 	return erg;
 }
 
