@@ -5,6 +5,9 @@ int main()
 	set_initial();
 	ausgabe();
 	next_frame();
+	next_frame();
+	next_frame();
+	next_frame();
 	ausgabe();
 	
 	/*
