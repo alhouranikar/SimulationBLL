@@ -42,6 +42,7 @@ extern double past_posy_x;
 extern double past_posx_y; // vroherige x-Position der Geschwindigkeit in y-Richtung
 extern double past_posy_y;
 extern long double umax;
+extern long double density;
 
 
 void import_obj(); // Verantwortlich dafür, verschiedene Geometries zu importieren
@@ -70,7 +71,38 @@ vector<long double> interpolate(); // Funktion, um die der Ursprungsposition der
 
 void ausgabe(); // NUR FÜR TESTZWECKE
 
+void advect(); // Berechnung der Advektion
+
+void ext_force(); // Einbezug externer Kräfte
+
 vector<vector<vector<vector<long double>>>>& operator+=(vector<vector<vector<vector<long double>>>>& vec1, vector<vector<long double>>& vec2); // Operatorüberladung, um Divergenz zum Wert zu addieren (NUR FÜR DRUCK, DA IMMER DER INDEX 0 ANGENOMMEN WIRD
+
+vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init); // Conjugate-Gradient-Methode
+
+// Alles für Matrizenrechnung
+
+namespace Matrix
+{
+	// CGM-Methode:
+	extern vector<vector<long double>> initial;
+	extern vector<vector<long double>> field;
+	extern vector<vector<long double>> coefficient;
+	extern vector<vector<long double>> b;
+
+	extern vector<vector<long double>> direction;
+	extern vector<vector<long double>> erg_scal_mul; // Speicherung des Ergebnisses von scal_mul
+	extern vector<vector<long double>> erg;
+
+	vector<vector<long double>>& operator*(const long double scalar, const vector<vector<long double>>& vec);
+	template<typename T>
+	T convert(const vector<vector<T>>& vec);
+	template<typename T>
+	vector<vector<T>> transpose(const vector<vector<T>>& vec);
+	vector<vector<long double>> operator-(const vector<vector<long double>>& minuend, const vector<vector<long double>>& subtrahend);
+	template<typename T, typename T2>
+	vector<vector<long double>>& operator*(const vector<vector<T>>& mat1, const vector<vector<T2>>& mat2);
+	vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init);
+}
 
 /*
 class UI

@@ -24,6 +24,7 @@ unsigned int nachbarn;
 vector<vector<vector<long double>>> temp; // VERBESSERUNG: besser kopieren, Erstellung einer Kopie des Vektorfelds zum Zeitpunkt glb_time
 vector<long double> temp_nval;
 double dist; 
+long double density;
 
 vector<vector<vector<long double>>> temp_vel;
 
@@ -47,6 +48,7 @@ void set_initial()
 		// Druck vorgeben!!!
 		for (int j = 0; j < size_y; ++j)
 		{
+			frames.at(0).at(i).at(j).at(0) = 1;
 			frames.at(0).at(i).at(j).at(1) = 0;
 			frames.at(0).at(i).at(j).at(2) = 1;
 			if (j == 0)
@@ -66,17 +68,23 @@ void set_initial()
 		frames.at(0).at(0).at(i).at(1) = 0;
 		frames.at(0).at(0).at(i).at(2) = 0;
 		is_boundary.at(0).at(i) = true;
+		is_boundary.at(1).at(i) = true;
 		is_inflow.at(i).at(0) = true;
 		is_boundary.at(i).at(0) = true;
+		is_boundary.at(i).at(1) = true;
 		is_solid.at(size_x - 1).at(i) = true;
 		frames.at(0).at(size_x-1).at(i).at(1) = 0;
 		frames.at(0).at(size_x-1).at(i).at(2) = 0;
 		is_boundary.at(size_x - 1).at(i) = true;
+		is_boundary.at(size_x - 2).at(i) = true;
 		is_outflow.at(i).at(size_y-1) = true;
 		is_boundary.at(i).at(size_y-1) = true;
+		is_boundary.at(i).at(size_y - 2) = true;
 	}
 	current_posx = 0;
 	current_posy = 0;
+
+	density = 1.0; // NUR FÜR TESTZWECKE
 }
 
 void create_mesh()
@@ -89,12 +97,12 @@ void next_frame()
 	++akt_frame;
 	frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
 	current_posx = current_posy = 0;
-	calc_pressure();
+	//calc_pressure();
 	current_posx = current_posy = 0;
-	calc_vel();
+	//calc_vel();
 	// VERBESSERUNG: calc_pressure und calc_vel in eine Schleife zusammenfassen
-	calc_dt(umax, dist); //	VERBESSERUNG: überprüfen, ob dt überhaupt geändert werden muss
-	glb_time += *time_stp;
+	//calc_dt(umax, dist); //	VERBESSERUNG: überprüfen, ob dt überhaupt geändert werden muss
+	//glb_time += *time_stp;
 /*	if (((*ende) - glb_time) / (*time_stp) > frame_anz - akt_frame)
 	{ // wenn nach neuem Zeitschritt mehr Frames benötigt werden // VERBESSERUNG: (dringend) überprüfen, ob resize sich lohnt, wenn der neue Zeitschritt größer ist 
 		frame_anz = static_cast<int>(((*ende) - (*start)) / (*time_stp));
@@ -140,26 +148,73 @@ void check_umax(vector<long double>& speed /* Frames - Vektor zur Zeit t eingebe
 
 void calc_pressure()
 {
-	/*
-	for (int x = 0; x < size_x; ++x)
+	for (int k = 0; k < 1000; ++k)
 	{
-		current_posx = x;
-		for (int y = 0; y < size_y; ++y)
+		for (int i = 0; i < size_x; ++i)
 		{
-			current_posy = y;
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(0) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(0);
-			vector<long double> nval = get_nval(0); // Fehler, akt_frame - 1 muss als temp gesetzt werden
-			temp.at(current_posx).at(current_posy) = frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(0) * nachbarn; // Pressure-solver nach https://cg.informatik.uni-freiburg.de/intern/seminar/gridFluids_fluid-EulerParticle.pdf, Frame vor dem aktuellen als Ursprungszustand
-			for (int h = 0; h < nval.size(); ++h)
-			{ // Schleife über alle Nachbarn der Zelle, um den Druckgradienten der aktuellen Zelle zu berechnen
-				temp.at(current_posx).at(current_posy) -= nval.at(h);
+			current_posx = i;
+			for (int j = 0; j < size_y; ++j)
+			{
+				current_posy = j;
+				if (is_boundary.at(current_posx).at(current_posy))
+				{
+					continue;
+				}
+				long double temp_u_x = (-frames.at(akt_frame).at(current_posx + 2).at(current_posy).at(1) + 16 * frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(1) - 30 * frames.at(akt_frame).at(current_posx).at(current_posy).at(1) + 16 * frames.at(akt_frame).at(current_posx - 1).at(current_posy).at(1) - frames.at(akt_frame).at(current_posx - 2).at(current_posy).at(1)) / (12 * dist * dist);
+				long double temp_v_y = (-frames.at(akt_frame).at(current_posx).at(current_posy + 2).at(2) + 16 * frames.at(akt_frame).at(current_posx).at(current_posy + 1).at(2) - 30 * frames.at(akt_frame).at(current_posx).at(current_posy).at(2) + 16 * frames.at(akt_frame).at(current_posx).at(current_posy - 1).at(2) - frames.at(akt_frame).at(current_posx).at(current_posy - 2).at(2)) / (12 * dist * dist); // NUR FÜR DELTA X = DELTA Y
+				long double temp_uv_xy = (frames.at(akt_frame).at(current_posx - 2).at(current_posy - 2).at(1) * frames.at(akt_frame).at(current_posx - 2).at(current_posy - 2).at(2) - 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy - 2).at(1) * frames.at(akt_frame).at(current_posx - 1).at(current_posy - 2).at(2) + 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy - 2).at(1) * frames.at(akt_frame).at(current_posx + 1).at(current_posy - 2).at(2) - frames.at(akt_frame).at(current_posx + 2).at(current_posy - 2).at(1) * frames.at(akt_frame).at(current_posx + 2).at(current_posy - 2).at(2) - 8 * (frames.at(akt_frame).at(current_posx - 2).at(current_posy - 1).at(1) * frames.at(akt_frame).at(current_posx - 2).at(current_posy - 1).at(2) - 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy - 1).at(1) * frames.at(akt_frame).at(current_posx - 1).at(current_posy - 1).at(2) + 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy - 1).at(1) * frames.at(akt_frame).at(current_posx + 1).at(current_posy - 1).at(2) - frames.at(akt_frame).at(current_posx + 2).at(current_posy - 1).at(1) * frames.at(akt_frame).at(current_posx + 2).at(current_posy - 1).at(2)) + 8 * (frames.at(akt_frame).at(current_posx - 2).at(current_posy + 1).at(1) * frames.at(akt_frame).at(current_posx - 2).at(current_posy + 1).at(2) - 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy + 1).at(1) * frames.at(akt_frame).at(current_posx - 1).at(current_posy + 1).at(2) + 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy + 1).at(1) * frames.at(akt_frame).at(current_posx + 1).at(current_posy + 1).at(2) - frames.at(akt_frame).at(current_posx + 2).at(current_posy + 1).at(1) * frames.at(akt_frame).at(current_posx + 2).at(current_posy + 1).at(2)) - (frames.at(akt_frame).at(current_posx - 2).at(current_posy + 2).at(1) * frames.at(akt_frame).at(current_posx - 2).at(current_posy + 2).at(2) - 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy + 2).at(1) * frames.at(akt_frame).at(current_posx - 1).at(current_posy + 2).at(2) + 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy + 2).at(1) * frames.at(akt_frame).at(current_posx + 1).at(current_posy + 2).at(2) - frames.at(akt_frame).at(current_posx + 2).at(current_posy + 2).at(1) * frames.at(akt_frame).at(current_posx + 2).at(current_posy + 2).at(2))) / (12 * dist * dist); // AUFPASSEN MIT UNTERSCHIEDLICHEN MESH-GRÖßEN, DA DELTA X AN VERSCHEIDENEN ORTEN DANN ANDERS SEIN KANN
+				frames.at(akt_frame).at(current_posx).at(current_posy).at(0) = ((12 * dist * dist) * ( - density * (temp_u_x + 2 * temp_uv_xy + temp_v_y)) + frames.at(akt_frame).at(current_posx + 2).at(current_posy).at(0) - 16 * frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(0) - 16 * frames.at(akt_frame).at(current_posx - 1).at(current_posy).at(0) + frames.at(akt_frame).at(current_posx - 2).at(current_posy).at(0) + frames.at(akt_frame).at(current_posx).at(current_posy + 2).at(0) - 16 * frames.at(akt_frame).at(current_posx).at(current_posy + 1).at(0) - 16 * frames.at(akt_frame).at(current_posx).at(current_posy - 1).at(0) + frames.at(akt_frame).at(current_posx).at(current_posy - 2).at(0)) / (-60);
+				if (k == 999)
+				{
+					cout << temp_u_x << " ";
+				}
 			}
-			// Schleife über alle Punkte im Mesh, um Laufzeit zu sparen (ca. 1.5x schneller), nicht implementieren, da zwei Schleifen also auch für die Geschwindigkeit durchlaufen werden müssten
+			if (k == 999)
+			{
+				cout << "\n";
+			}
 		}
 	}
-	frames += temp; // berechnete Änderung der Werte aus temp als Divergenz zu den Werten in values hinzuaddieren, nur für pressure
-	*/
-	// für Pressure-solver noch boundary-check einführen
+}
+
+void advect()
+{
+	for (int i = 0; i < size_x; ++i)
+	{
+		current_posx = i;
+		for (int j = 0; j < size_y; ++j)
+		{
+			current_posy = j;
+			if (is_boundary.at(current_posx).at(current_posy))
+			{
+				continue;
+			}
+			past_posx_x = current_posx - frames.at(akt_frame).at(current_posx).at(current_posy).at(1) * (*time_stp); // vorherige Position bei dem Teilchen, welches am Ort der x-Geschwindigkeit ist
+			past_posy_x = current_posy + 0.5/*da x- und y-Geschwindigkeit versetzt gespeichert sind*/ - calc_avg(2) * (*time_stp);
+			past_posx_y = current_posx + 0.5 - calc_avg(1) * (*time_stp);
+			past_posy_y = current_posy - frames.at(akt_frame).at(current_posx).at(current_posy).at(2) * (*time_stp); // hier in y-Richtung
+			vector<long double> erg = interpolate(); // interpolierte Geschwindigkeit an der vorherigen Position
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = erg.at(0);
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = erg.at(1);
+		}
+	}
+}
+
+void ext_force()
+{
+	for (int i = 0; i < size_x; ++i)
+	{
+		current_posx = i;
+		for (int j = 0; j < size_y; ++j)
+		{
+			current_posy = j;
+			if (is_boundary.at(current_posx).at(current_posy))
+			{
+				continue;
+			}
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) += (*time_stp) * 9.81; // Einbezug der Gravitation in y-Richtung
+		}
+	}
 }
 
 void calc_vel()
@@ -493,8 +548,26 @@ vector<long double> interpolate()
 	return erg;
 }
 
+bool is_outside(int past_x, int past_y, long double u, long double v)
+{
+	if (is_solid.at(past_x).at(past_y))
+	{
+		// nichts
+	}
+	return false;
+}
+
 void ausgabe()
 {
+	std::cout << "Druck zum Zeitpunkt " << akt_frame * (*time_stp) << ":\n";
+	for (int x = 0; x < size_x; ++x)
+	{
+		for (int y = 0; y < size_y; ++y)
+		{
+			cout << frames.at(akt_frame).at(x).at(y).at(0) << " ";
+		}
+		cout << "\n";
+	}
 	std::cout << "Geschwindigkeit in x-Richtung zum Zeitpunkt " << akt_frame * (*time_stp) << ":\n";
 	for (int x = 0; x < size_x; ++x)
 	{
@@ -526,4 +599,131 @@ vector<vector<vector<vector<long double>>>>& operator+=(vector<vector<vector<vec
 		}
 	}
 	return vec1;
+}
+
+// Matrix-Rechnung und CGM-Methode
+vector<vector<long double>> Matrix::direction;
+vector<vector<long double>> Matrix::erg_scal_mul;
+vector<vector<long double>> Matrix::erg;
+
+vector<vector<long double>>& Matrix::operator*(const long double scalar, const vector<vector<long double>>& vec)
+{ // skalare Multiplikation
+	erg_scal_mul = vector<vector<long double>>(vec.size(), vector<long double>(vec.at(0).size()));
+	for (int i = 0; i < vec.size(); ++i)
+	{
+		for (int j = 0; j < vec.at(0).size(); ++j)
+		{
+			erg_scal_mul.at(i).at(j) = vec.at(i).at(j) * scalar;
+		}
+	}
+	return erg_scal_mul;
+}
+
+template<typename T>
+T Matrix::convert(const vector<vector<T>>& vec)
+{ // wenn Vektor nur einen Eintrag hat als Skalar zurückgeben
+	if (vec.size() == 1 || vec.at(0).size())
+	{
+		return vec.at(0).at(0);
+	}
+	cerr << "Fehler bei convert-Methode!" << endl;
+	return 0;
+}
+
+template<typename T>
+vector<vector<T>> Matrix::transpose(const vector<vector<T>>& vec)
+{ // zu Matrix/ Vektor transponierten Vektor erstellen
+	vector<vector<T>> erg = vector<vector<T>>(vec.at(0).size(), vector<T>(vec.size()));
+	for (int i = 0; i < vec.size(); ++i)
+	{
+		for (int j = 0; j < vec.at(0).size(); ++j)
+		{
+			erg.at(j).at(i) = vec.at(i).at(j);
+		}
+	}
+	return erg;
+}
+
+vector<vector<long double>> Matrix::operator-(const vector<vector<long double>>& minuend, const vector<vector<long double>>& subtrahend)
+{
+	vector<vector<long double>> erg1 = vector<vector<long double>>(minuend.size(), vector<long double>(minuend.at(0).size()));
+	if ((minuend.size() != subtrahend.size()) || (minuend.at(0).size() != subtrahend.at(0).size()))
+	{
+		cerr << "Die Vektoren haben nicht die gleiche Größe!";
+		return {};
+	}
+	for (int i = 0; i < minuend.size(); ++i)
+	{
+		for (int j = 0; j < minuend.at(0).size(); ++j)
+		{
+			erg1.at(i).at(j) = minuend.at(i).at(j) - subtrahend.at(i).at(j);
+		}
+	}
+	return erg1;
+}
+
+template<typename T, typename T2>
+vector<vector<long double>>& Matrix::operator*(const vector<vector<T>>& mat1, const vector<vector<T2>>& mat2)
+{
+	erg = vector<vector<long double>>(mat1.size(), vector<long double>(mat2.at(0).size(), 0.0));
+	if (mat1.at(0).size() != mat2.size())
+	{
+		/*
+		cout << "jkdflsaöjfioepjfoisjfoesisa: " << mat1.at(0).size() << " " << mat2.size() << endl;
+		for (int i = 0;i < mat1.size();++i)
+		{
+			for (int j = 0;j < mat1.at(0).size();++j)
+			{
+				cout << mat1.at(i).at(j) << " ";
+			}
+			cout << endl;
+		}
+		cout << "ende" << endl;
+		*/
+		return erg;
+	}
+	for (int i = 0; i < mat1.size(); ++i)
+	{
+		for (int j = 0; j < mat2.at(0).size(); ++j)
+		{
+			for (int k = 0; k < mat2.size(); ++k)
+			{
+				erg.at(i).at(j) += mat1.at(i).at(k) * mat2.at(k).at(j);
+			}
+		}
+	}
+	return erg;
+}
+
+vector<vector<long double>> Matrix::cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init)
+{
+	vector<vector<long double>> rest;
+	vector<vector<long double>> next_rest;
+	vector<vector<long double>> sol = init;
+	long double temp1;
+	long double temp2;
+	long double temp3;
+	long double temp4;
+	long double alpha;
+	long double beta;
+	for (int i = 0; i < sol.size(); ++i) // REMOVE BEFORE FLIGHT
+	{
+		rest = next_rest;
+		if (i == 0)
+		{
+			direction = b1 - koeff * init;
+			rest = direction;
+		}
+		temp1 = convert(transpose(rest) * rest);
+		vector<vector<long double>> temp8 = koeff * direction;
+		temp2 = convert(transpose(direction) * temp8); // verketteter Aufruf nicht möglich, da erg globale Variable ist
+		alpha = temp1 / temp2;
+		sol = sol - (-alpha) * direction; // -, um keinen neuen Operator zu überladen
+		next_rest = rest - alpha * (koeff * direction);
+		temp3 = convert(transpose(next_rest) * next_rest);
+		temp4 = convert(transpose(rest) * rest);
+		beta = temp3 / temp4;
+		direction = next_rest - (-beta) * direction;
+	}
+	return sol;
 }
