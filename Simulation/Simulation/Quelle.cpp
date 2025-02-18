@@ -25,6 +25,8 @@ vector<vector<vector<long double>>> temp; // VERBESSERUNG: besser kopieren, Erst
 vector<long double> temp_nval;
 double dist; 
 long double density;
+vector<long double> x_vec(2, 0); // Vektor, welcher die Richtung der Geschwindigkeit für die x-Komponente speichert, später lokal definieren
+vector<long double> y_vec(2, 0); // Vektor, welcher die Richtung der Geschwindigkeit für die y-Komponente speichert (zweiter Eintrag der Geschwindigkeit in frames
 
 vector<vector<vector<long double>>> temp_vel;
 
@@ -49,11 +51,11 @@ void set_initial()
 		for (int j = 0; j < size_y; ++j)
 		{
 			frames.at(0).at(i).at(j).at(0) = 1;
-			frames.at(0).at(i).at(j).at(1) = 0;
+			frames.at(0).at(i).at(j).at(1) = 1;
 			frames.at(0).at(i).at(j).at(2) = 1;
-			if (j == 0)
+			if (j == 5 && i == 5)
 			{
-				frames.at(0).at(i).at(j).at(2) = 1;
+				frames.at(0).at(i).at(j).at(1) = 1.8;
 			}
 		}
 		check_umax(frames.at(akt_frame).at(current_posx).at(current_posy)); // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
@@ -496,53 +498,105 @@ vector<long double> interpolate()
 	vector<long double> erg(2);
 	vector<long double> values(8);
 	int untere_grx_x, untere_gry_x, obere_grx_x, obere_gry_x, untere_grx_y, untere_gry_y, obere_grx_y, obere_gry_y;
-	untere_grx_x = floor(past_posx_x);
-	untere_gry_x = floor(past_posy_x - 1) + 0.5; /*-1, damit Abstand der Geschwindigkeit in y-Richtung an der unteren Grenze vom Rand der Zelle berücksichtigt wird (siehe Skizze)*/ /*+0,5, da x- und y-Geschwindigkeit versetzt gespeichert sind*/
-	untere_grx_y = floor(past_posx_y - 1) + 0.5; // HIER NOCH GUCKEN
-	untere_gry_y = floor(past_posy_y);
+	untere_grx_x = trunc(past_posx_x);
+	untere_gry_x = trunc(past_posy_x - 1) + 0.5; /*-1, damit Abstand der Geschwindigkeit in y-Richtung an der unteren Grenze vom Rand der Zelle berücksichtigt wird (siehe Skizze)*/ /*+0,5, da x- und y-Geschwindigkeit versetzt gespeichert sind*/
+	untere_grx_y = trunc(past_posx_y - 1) + 0.5;
+	untere_gry_y = trunc(past_posy_y);
+
+	double deriv_x = calc_avg(2) / frames.at(akt_frame).at(current_posx).at(current_posy).at(1);
+	double deriv_y = frames.at(akt_frame).at(current_posx).at(current_posy).at(2) / calc_avg(1);
+
+	obere_grx_x = untere_grx_x < 0 ? untere_grx_x - 1 : untere_grx_x + 1; // wenn die Grenze kleienr als 0 ist
+	obere_gry_x = untere_gry_x < 0 ? untere_gry_x - 1 : untere_gry_x + 1;
+	obere_grx_y = untere_grx_y < 0 ? untere_grx_y - 1 : untere_grx_y + 1;
+	obere_gry_y = untere_gry_y < 0 ? untere_gry_y - 1 : untere_gry_y + 1;
 
 	// Wenn etwas von der x-Geschwindigkeit außerhalb der boundary ist
-	if (untere_grx_x < 0)
+	while (past_posx_x < 0 || is_solid.at(untere_grx_x).at(untere_gry_x) || is_solid.at(untere_grx_x).at(obere_gry_x))
 	{
-		untere_grx_x = 0;
+		double temp = (untere_grx_x - past_posx_x);
+		past_posx_x += temp + 0.01 * dist; // auf einer Geraden mit dem Richtungsvektor akt_geschwindigkeit_x / akt_geschwindigkeit_y wird so lange der Punkt past_posx_x proportional zu past_posy_x verfolgt, bis die Grenzen innerhalb der Domain sind
+		past_posy_x += deriv_x * (temp + 0.01 * dist); // damit Proportionalität beibehalten wird
+		untere_grx_x = trunc(past_posx_x);
+		obere_grx_x = untere_grx_x <= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
+		untere_gry_x = trunc(past_posy_x);
+		obere_gry_x = untere_gry_x <= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
 	}
-	else if (untere_grx_x + 1 > size_x - 1)
+	while (past_posx_x > size_x - 1 || is_solid.at(obere_grx_x).at(untere_gry_x) || is_solid.at(obere_grx_x).at(obere_gry_x))
 	{
-		untere_grx_x = size_x - 2;
+		double temp = (untere_grx_x - past_posx_x);
+		past_posx_x += temp - 0.01 * dist; 
+		past_posy_x += deriv_x * (temp - 0.01 * dist);
+		untere_grx_x = trunc(past_posx_x);
+		obere_grx_x = untere_grx_x >= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
+		untere_gry_x = trunc(past_posy_x);
+		obere_gry_x = untere_gry_x >= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
 	}
-	if (untere_gry_x < 0)
+	while (past_posy_x < 0 || is_solid.at(obere_grx_x).at(untere_gry_x) || is_solid.at(untere_grx_x).at(untere_gry_x))
 	{
-		untere_gry_x = 0.5;
+		double temp = (untere_gry_x - past_posy_x);
+		past_posy_x += temp + 0.01 * dist;
+		past_posx_x += (1 / deriv_x) * (temp + 0.01 * dist); // hier Kehrwert von deriv_x, damit korrektes dx hier berechnet werden kann (jetzt ist es dx/dy * dy = dx)
+		untere_grx_x = trunc(past_posx_x);
+		obere_grx_x = untere_grx_x <= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
+		untere_gry_x = trunc(past_posy_x);
+		obere_gry_x = untere_gry_x <= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
 	}
-	else if (untere_gry_x + 1 > size_y - 1)
+	while (past_posy_x > size_y || is_solid.at(obere_grx_x).at(obere_gry_x) || is_solid.at(untere_grx_x).at(obere_gry_x))
 	{
-		untere_gry_x = size_y - 1.5;
+		double temp = (untere_grx_x - past_posx_x);
+		past_posx_x += temp - 0.01 * dist;
+		past_posy_x += (1 / deriv_x) * (temp - 0.01 * dist);
+		untere_grx_x = trunc(past_posx_x);
+		obere_grx_x = untere_grx_x >= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
+		untere_gry_x = trunc(past_posy_x);
+		obere_gry_x = untere_gry_x >= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
 	}
 	// hier y-Geschwindigkeit:
-	if (untere_grx_y < 0)
-	{ // HIER NOCH GUCKEN
-		untere_grx_y = 0;
-	}
-	else if (untere_grx_y + 1 > size_x - 1)
+	while (past_posx_y < 0 || is_solid.at(untere_grx_y).at(untere_gry_y) || is_solid.at(untere_grx_y).at(obere_gry_y))
 	{
-		untere_grx_y = size_x - 2;
+		double temp = (untere_grx_y - past_posx_y);
+		past_posx_y += temp + 0.01 * dist; // auf einer Geraden mit dem Richtungsvektor akt_geschwindigkeit_y / akt_geschwindigkeit_y wird so lange der Punkt past_posx_y proportional zu past_posy_y verfolgt, bis die Grenzen innerhalb der Domain sind
+		past_posy_y += deriv_y * (temp + 0.01 * dist); // damit Proportionalität beibehalten wird
+		untere_grx_y = trunc(past_posx_y);
+		obere_grx_y = untere_grx_y <= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
+		untere_gry_y = trunc(past_posy_y);
+		obere_gry_y = untere_gry_y <= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
 	}
-	if (untere_gry_y < 0)
+	while (past_posx_y > size_y - 1 || is_solid.at(obere_grx_y).at(untere_gry_y) || is_solid.at(obere_grx_y).at(obere_gry_y))
 	{
-		untere_gry_y = 0;
+		double temp = (untere_grx_y - past_posx_y);
+		past_posx_y += temp - 0.01 * dist;
+		past_posy_y += deriv_y * (temp - 0.01 * dist);
+		untere_grx_y = trunc(past_posx_y);
+		obere_grx_y = untere_grx_y >= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
+		untere_gry_y = trunc(past_posy_y);
+		obere_gry_y = untere_gry_y >= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
 	}
-	else if (untere_gry_y + 1 > size_y - 1)
+	while (past_posy_y < 0 || is_solid.at(obere_grx_y).at(untere_gry_y) || is_solid.at(untere_grx_y).at(untere_gry_y))
 	{
-		untere_gry_y = size_y - 2;
+		double temp = (untere_gry_y - past_posy_y);
+		past_posy_y += temp + 0.01 * dist;
+		past_posx_y += (1 / deriv_y) * (temp + 0.01 * dist); // hier Kehrwert von deriv_y, damit korrektes dx hier berechnet werden kann (jetzt ist es dx/dy * dy = dx)
+		untere_grx_y = trunc(past_posx_y);
+		obere_grx_y = untere_grx_y <= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
+		untere_gry_y = trunc(past_posy_y);
+		obere_gry_y = untere_gry_y <= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
+	}
+	while (past_posy_y > size_y || is_solid.at(obere_grx_y).at(obere_gry_y) || is_solid.at(untere_grx_y).at(obere_gry_y))
+	{
+		double temp = (untere_grx_y - past_posx_y);
+		past_posx_y += temp - 0.01 * dist;
+		past_posy_y += (1 / deriv_y) * (temp - 0.01 * dist);
+		untere_grx_y = trunc(past_posx_y);
+		obere_grx_y = untere_grx_y >= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
+		untere_gry_y = trunc(past_posy_y);
+		obere_gry_y = untere_gry_y >= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
 	}
 	obere_grx_x = untere_grx_x + 1;
 	obere_gry_x = untere_gry_x + 1;
 	obere_grx_y = untere_grx_y + 1;
 	obere_gry_y = untere_gry_y + 1;
-	if (is_solid.at(obere_grx_x).at(untere_gry_x))
-	{
-		
-	}
 	erg.at(0) = (obere_gry_x - past_posy_x) * (past_posx_x - untere_grx_x) * frames.at(akt_frame - 1).at(obere_grx_x).at(untere_gry_x).at(1) + (past_posx_x - untere_grx_x) * (past_posy_x - untere_gry_x) * frames.at(akt_frame - 1).at(obere_grx_x).at(obere_gry_x).at(1) + (obere_grx_x - past_posx_x) * (obere_gry_x - past_posy_x) * frames.at(akt_frame - 1).at(untere_grx_x).at(untere_gry_x).at(1) + (obere_grx_x - past_posx_x) * (past_posy_x - untere_gry_x) * frames.at(akt_frame - 1).at(untere_grx_x).at(obere_gry_x).at(1);
 	erg.at(1) = (obere_gry_y - past_posy_y) * (past_posx_y - untere_grx_y) * frames.at(akt_frame - 1).at(obere_grx_y).at(untere_gry_y).at(2) + (past_posx_y - untere_grx_y) * (past_posy_y - untere_gry_y) * frames.at(akt_frame - 1).at(obere_grx_y).at(obere_gry_y).at(2) + (obere_grx_y - past_posx_y) * (obere_gry_y - past_posy_y) * frames.at(akt_frame - 1).at(untere_grx_y).at(untere_gry_y).at(2) + (obere_grx_y - past_posx_y) * (past_posy_y - untere_gry_y) * frames.at(akt_frame - 1).at(untere_grx_y).at(obere_gry_y).at(2); // interpolierte Geschwindigkeit in y-Richtung von y-Geschwindigkeit
 	return erg;
