@@ -1,0 +1,146 @@
+Funktionen, welche durch partielle Differentialgleichungen beschrieben werden sind, im Gegensatz zu solchen, die durch gewöhnliche Differentialgleichungen beschrieben werden, von mehreren Variablen abhängig, sodass nicht nur Ableitungen verschiedener Ordnungen auftreten können, sondern auch derartige, die verschiedene Variablen aufweisen. Daraus entsteht eine enorme Vielfalt, welche unterschiedlichste Lösungsmethoden erfordert. Dieses Kapitel beschränkt sich jedoch auf Formen wie die der Navier-Stokes-Gleichungen, also quasi-lineare Gleichungen zweiter Ordnung.
+% erstmal für die Euler-Gleichungen schreiben
+Die Euler-Gleichungen beschreiben ein System partieller quasi-linearer Differentialgleichungen zweiter Ordnung. Ein System partieller Differentialgleichungen ist quasi-linear, wenn die Ableitungen höchster Ordnung des Systems linear sind, also nur von den unabhängigen Variablen des Systems sowie (möglicherweise) der Lösungsfunktion selbst abhängig sind. 
+
+\subsubsection{Klassifizierung partieller Differentialgleichungen}
+
+Buch~\cite[S. 115]{epstein_partial_2017} nennt folgende allgemeine Form partieller Differentialgleichungen zweiter Ordnung:
+\begin{align}
+\label{zeile1}
+    a u_{xx} + 2b u_{xy} + c u_{yy} = d
+\end{align}
+bzw. im quasi-linearen Fall:
+\begin{align*}
+    a(x,y,u,u_x,u_y) u_{xx} + 2b(x,y,u,u_x,u_y) u_{xy} + c(x,y,u,u_x,u_y) u_{yy} = d(x,y,u,u_x,u_y).
+\end{align*}
+Gegebene Anfangsbedingungen der Form 
+\begin{align*}
+    u=\hat{u}(r), \quad u_x = \hat{u}_x (r), \quad u_y = \hat{u}_y (r)
+\end{align*}
+(mit dem Kurvenparameter $r$) - welche für die Lösung von Gleichungen dieser Form unerlässlich sind - müssen offensichtlich die Gleichung selbst erfüllen. Außerdem muss nach der Kettenregel und der Bedingung, dass alle Ableitungen an jedem Punkt der gegebenen Kurve $r$ bzw. $\hat{u}(r)$ definiert sein müssen, gelten:
+\begin{align}
+\label{zeile2}
+    \diff{\hat{u}_x}{r} &= u_{xx} \diff{\hat{x}}{r} + u_{xy} \diff{\hat{y}}{r} \\ 
+\label{zeile3}
+    \diff{\hat{u}_y}{r} &= u_{yy} \diff{\hat{y}}{r} + u_{xy} \diff{\hat{x}}{r}.
+\end{align}
+Werden nun die Gleichungen ~\eqref{zeile1}, ~\eqref{zeile2} und ~\eqref{zeile3}, welche von den Anfangsbedingungen erfüllt werden müssen, in ein Gleichungssystem kombiniert, ergibt sich:
+\begin{align}
+\label{lgs_qual}
+% Verschönern!!!
+    \renewcommand{\arraystretch}{1.15}
+    \begin{bmatrix}
+        a & 2b & c \\
+        \diff{\hat{x}}{r} & \diff{\hat{y}}{r} & 0 \\
+        0 &  \diff{\hat{x}}{r} & \diff{\hat{y}}{r} \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{xx} \\
+        u_{xy} \\
+        u_{yy} \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        d \\
+        \diff{\hat{u}_x}{r} \\
+        \diff{\hat{u}_y}{r}
+    \end{bmatrix}
+\end{align}
+damit dieses Gleichungssystem eindeutig lösbar ist, muss die Determinante der Koeffizientenmatrix ungleich null sein. Nach der \emph{Regel von Sarrus} ergibt sich für Gleichung ~\eqref{lgs_qual}:
+\begin{align}
+\label{determinante}
+\determ{A} = a\cdot \diff{\hat{y}}{r} \cdot \diff{\hat{y}}{r} + 0 + c \cdot \diff{\hat{x}}{r}\cdot \diff{\hat{x}}{r} - 2b \cdot \diff{\hat{x}}{r} \cdot \diff{\hat{y}}{r} - 0 - 0.
+\end{align}
+Wäre das Gleichungssystem an jeder Position auf der Anfangskurve $r(x,y)$ eindeutig lösbar, sind diese Anfangsbedingungen nicht ausreichend, um die partielle Differentialgleichung zu lösen, da sie an keiner Stelle vorschreiben, wie sich die Lösungsfunktion außerhalb dieser gegebenen Kurve verhalten. Es lässt sich zeigen, \begin{comment}
+    ~\cite{Epstein}
+\end{comment}
+dass gerade an den Stellen, an denen das Gleichungssystem nicht eindeutig lösbar ist, Charakteristiken (eine Definition soll hier nicht genannt werden) aufweist. Diese sind essenziell für die Lösungstheorie partieller Differentialgleichungen und bestimmen die Art und Weise partielle Differentialgleichungen zu lösen. Setzen wir ~\eqref{determinante} gleich null, und multiplizieren beide Seiten mit $\left(\diff{r}{\hat{x}}\right)^2$, erhalten wir eine quadratische Gleichung, deren Lösungen mit der \emph{pq-Formel} gefunden werden können:
+\begin{align}
+\label{quad_gleichung_det}
+    \lr{(}{)}{\diff{\hat{y}}{\hat{x}}}_{1,2} = \frac{b}{a} \pm \sqrt{\lr{(}{)}{\frac{b}{a}}^{2} - \frac{c}{a}}.
+\end{align}
+Für die Diskriminante $D$ der Gleichung können folgende Fälle eintreten:
+\begin{align}
+    x_{1,2} = 
+    \begin{cases}
+        D>0: \quad &x_1 \neq x_2  \land x_1, x_2 \in \mathbb{R} \\
+        D=0: \quad &x_1 = x_2 \land x_1, x_2 \in \mathbb{R} \\
+        D<0: \quad &x_1 \neq x_2 \land x_1, x_2 \in \mathbb{C} \\
+    \end{cases}
+\end{align}
+\begin{Definition}
+    Eine partielle Differentialgleichung zweiter Ordnung ist: \\
+    \textbf{hyperbolisch}, wenn es zwei unterschiedliche Lösungen ($\in \mathbb{R}$) der Gleichung ~\eqref{quad_gleichung_det} gibt, \\
+    \textbf{parabolisch}, wenn es eine Lösung ($\in \mathbb{R}$) gibt, \\
+    \textbf{elliptisch}, wenn es zwei unterschiedliche Lösungen ($\in \mathbb{C}$) gibt.
+\end{Definition}
+
+Um die Euler-Gleichungen nun genauer zu betrachten, sollen zunächst ihre \emph{Charakteristiken} untersucht werden.
+Dazu soll die Euler-Gleichung in folgendes Gleichungssystem umgeschrieben werden:
+\begin{align}
+\label{eq:euler_system}
+    &\begin{bmatrix}
+        0 & 0 & 0 \\
+        0 & \rho  & 0 \\
+        0 & 0 & \rho \\
+        0 & u_1   & u_2 \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        \rho_t \\
+        u_{1_t} \\
+        u_{2_t} \\
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        \rho & 0 & 0 \\
+        2\rho u_1 & 0 & 1 \\
+        \rho u_2 & \rho u_1 & 0 \\
+        \rho e + p + u_1 & u_2 & u_1 \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{1_x} \\
+        u_{2_x} \\
+        p_x \\
+    \end{bmatrix} \\
+    &+
+    \begin{bmatrix}
+    \rho             & 0 & 0 \\
+    \rho u_1         & \rho u_2 & 0 \\
+    2\rho u_2        & 0 & 1 \\
+    \rho e + p + u_2 & u_1 & u_2 \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{2_y} \\
+        u_{1_y} \\
+        p_y \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 \\
+        \rho g_1 \\
+        \rho g_2 \\
+        \rho (u_1 g_1 + u_2 g_2)\\
+    \end{bmatrix}
+\end{align}
+Damit solche Charakteristiken nun existieren, muss, wie im Fall von partiellen Differentialgleichungen zweiter Ordnung, für festgelegte Anfangsbedingungen das ursprüngliche Gleichungssystem erfüllt sein sowie die Kettenregel der Differentiation gelten. Unter diesen Einschränkungen ergibt sich für die Euler-Gleichung~\eqref{eq:euler} folgendes System:
+\begin{align*}
+    fda
+\end{align*}
+Ein Ansatz zur Gewinnung der Charakteristiken ist die Lösung der Eigenwert-Gleichung für charakteristische Kurven, wobei diese durch die Gleichungen
+\begin{align}
+    \diff{x}{s} = a(x,y,u) \qquad \diff{y}{s}=b(x,y,u) \qquad \diff{u}{s} = c(x,y,u)
+\end{align}
+gegeben sind. Diese Charakteristiken sind zu integrieren und offenbaren die Lösung der partiellen Differentialgleichung, da
+\begin{align*}
+    \diff{x}{s} \pd{u}{x} + \diff{y}{s} \pd{u}{y} = \diff{u}{s}
+\end{align*}
+ist. Unter Angabe geeigneter Anfangsbedingungen kann diese nun gewöhnliche Differentialgleichung über dem Kurvenparameter $s$ gelöst werden. Da im Fall von einem Gleichungssystem partieller Differentialgleichungen der Form
+\begin{align*}
+    \boldsymbol{Au_x} + \boldsymbol{Bu_y} + \boldsymbol{Cu_t} = \boldsymbol{D}
+\end{align*}
+(wie in Gleichung~\eqref{eq:euler_system}) die Koeffizienten der Ableitungen durch Matrizen gegeben sind, ergibt sich:
+
+
+%HIER WEITER: Lösung der Eigenwert-Gleichung
+
+\subsubsection{Fourier-Transformationen}
