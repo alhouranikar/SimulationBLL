@@ -1,0 +1,59 @@
+\documentclass[size=12pt]{report}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc} 
+\usepackage{csquotes}
+\usepackage{blindtext}
+\usepackage{array, multicol, multirow}
+\usepackage{lipsum}
+\usepackage{tabularx}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{siunitx}
+\sisetup{locale = DE}
+\usepackage{mathtools}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{unicode-math}
+\usepackage{braket}
+
+\usepackage{mathrsfs}
+
+\newtheorem{theoremvar}{Theorem}
+\newtheorem{definition}{Definition}
+
+\title{Funktionalanalysis}
+
+\begin{document}
+
+\begin{definition}
+    Der Urbildraum eines Operators $A:U\mapsto I$ ist definiert als
+    \begin{align*}
+        \mathscr{D}(A):= \{u\in U: Au\neq \{\}\}
+    \end{align*}
+\end{definition}
+
+\begin{definition}
+    Der Bildraum eines Operators $A:U\mapsto I$ ist definiert als 
+    \begin{align*}
+        \mathscr{R}(A):= \{u\in \mathscr{D}(A): Au\}
+    \end{align*}
+\end{definition}
+
+\begin{definition}
+    Der Abschluss (closure) $\Bar{M}$ einer Menge $M$ ist definiert als\footnote{Die Folge der $\{x_n\}$ wird als Cauchy-Folge vorausgesetzt.}
+    \begin{align*}
+        \forall \{x_n\}_{\infty} \in M \rightarrow x \Rightarrow x\in \Bar{M}
+    \end{align*}
+\end{definition}
+
+\begin{theoremvar}
+Sei $A$ ein dicht definierter, geschlossener linearer Operator $A:\mathscr{D}(A)\subset \emph{H}_1 \mapsto \emph{H}_2$. Dann ist $\mathscr{D}(A^*)$ dicht in $\emph{H}_2$ und es gilt $A^{**}=A$.
+\end{theoremvar}
+\\
+\emph{Beweis:}
+Da zwischen den Mengen $\mathscr{D}(A)$ und $\emph{H}_2$ eine lineare Abbildung besteht, muss es eine Bijektion zwischen diesen Mengen geben. Nach der Definition des adjungierten Operators $A^*:\mathscr{D}(A^*)\subset \emph{H}^*_2 \mapsto \mathscr{R}(A^*) \subset \emph{H}^*_1 \text{ mit } \braket{A^*v;\, u} = \braket{v;\, Au},\, \forall u\in H_1, v\in H_2^*$ muss es zu einem Funktional (für $\mathbb{K}=\mathbb{R}$) aus $\emph{H}_1^*$ ($\in \mathscr{R}(A^*)$) und einem Element aus $\emph{H}_1$ ein Element aus $H_2^*$ geben, welches einem $Au \in H_2$ denselben Funktionswert zuordnet.
+Dadurch, dass der Operator bijektiv ist, lässt sich die Schreibweise durch die Äquivalenz eines Hilbertraumes mit seinem Dualraum ändern und es gilt $\braket{v;\, Au}=\braket{Au;\, v}$, sodass obige Aussage zu $\braket{A^*v;\, u}=\braket{Au;\, v}$ wird. Nach dem Riesz-Repräsentations-Theorem lässt sich diese Aussage weiterhin umwandeln zu $(w_{H_1};\, u)_{H_1}=(w_{H^*_2};\, v)_{H^*_2},\, (u\in H_1, v\in H_2^*)$. Da beide Seiten der Gleichung jeweils eine bijektive Abbildung darstellen, muss es zu jedem $u\in H_1$ ein eindeutiges Element $\in H_1$ geben. Da dies auf der Gegenseite ähnlich ist, muss es zu jedem - als Skalarprodukt in $H_1$ darstellbarem - Funktionswert den selben in $H_2^*$ geben. Daraus resultiert, dass beide Mengen gleichmächtig sein müssen und, da $A^*$ mit $A$ als linear und damit bijektiv gegeben war, impliziert dies, dass $D(A^*)$ dicht in $H_2^*$ sein muss (da $H_2^*=H_2$ gleichmächtig wie $H_1$ ist).
+Wendet man dieses Argument auch auf den adjungierten Operator $A^*$ an, so muss $\forall (a\in \mathscr{D}(A^{**})\Rightarrow a\in \mathscr{D}(A))$ gelten (sowie für die Reichweite)\footnote{Die Linearität des adjungiertadjungierten Operators zu $A$ folgt aus der vorherigen Anmerkung.}.
+\end{document}

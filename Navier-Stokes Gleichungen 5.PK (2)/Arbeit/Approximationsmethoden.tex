@@ -1,0 +1,96 @@
+\subsubsection{Conjugate-Gradient-Methode}
+
+Die Conjugate-Gradient-Methode~\cite[nach][]{shewchuk_introduction_1994} erweist sich als sehr nützlich bei der Lösung linearer Gleichungssysteme der Form
+\begin{align}
+    Ax=b \label{LGS},
+\end{align}
+wobei $b$ ein konstanter Ergebnisvektor ist, $x$ ein Variablen-Tupel, welches mit Hilfe der Conjugate-Gradient-Methode ermittelt werden soll und $A$ eine positiv definite Koeffizientenmatrix.
+\begin{Definition}
+    Eine Matrix $A$ ist positiv definit, wenn alle ihre Eigenwerte positiv sind.
+\end{Definition}
+Dabei bedient sich die Conjugate-Gradient-Methode nicht direkt diesem Gleichungssystem, sondern minimiert eine Funktion in der sogenannten quadratischen Form:
+\begin{align}
+    f(x)&=\frac{1}{2}x^T A x - x^T b \qquad (x \in \mathbb{R}^n). \label{quad_form}
+\end{align}
+Der Gradient dieser Funktion $\nabla f(x)$ ist gegeben durch:
+\begin{align*}
+    \nabla f(x) = \frac{1}{2} A^T x + \frac{1}{2}Ax - b,
+\end{align*}
+wobei der rechte Teil dieser Gleichung äquivalent zu Gleichung \eqref{LGS} ist, wenn die Matrix $A$ symmetrisch ist. Gleichung \eqref{quad_form} hat die angenehme Eigenschaft, nur ein Extremum zu besitzen, wobei, dadurch dass $A$ positiv definit ist, dieses Extremum ein Minimum ist. Ist also $\nabla f(x)=0$, so ist das Minimum gefunden. Ist also durch die Conjugate-Gradient-Methode ein Minimum der genannten Gleichung gefunden, so gilt:
+\begin{align*}
+    \nabla f(x)=0=Ax-b \quad \therefore \, Ax=b %KORRREKTUR: ,
+\end{align*}
+und das Gleichungssystem ist gelöst.
+Die Conjugate-Gradient-Methode basiert dabei auf dem Prinzip der Conjugate-Directions, wobei Suchrichtungen geschaffen werden, die jeweils $A$-orthogonal sind.
+\begin{Definition}
+    Zwei Vektoren $x$, $y$ sind $A$-orthogonal, wenn gilt:
+    \begin{align*}
+        x\cdot Ay = 0,
+    \end{align*}
+    dabei ist $\cdot$ ein geeignetes Skalarprodukt.
+\end{Definition}
+Es lässt sich nämlich zeigen, dass, wenn die Suchrichtungen $A$-orthogonal sind, das Verfahren genau dann in $n$-Schritten konvergiert, wenn in jeder dieser Suchrichtungen die Gleichung \eqref{quad_form} minimiert wird. Beide dieser Bedingungen werden mit dem folgenden Verfahren erfüllt: 
+\begin{enumerate}
+    \item Bestimmung des Rests ($b-Ax_0$), dieser ist die erste Suchrichtung \\
+    \item Bestimmung des Koeffizienten $\alpha$, welcher die Gleichung entlang der Suchrichtung minimiert ($\min(f(x_i + \alpha d_i))$) \\
+    \item Setze $x_{i+1} = x_i + \alpha d_i$ als neue Lösung \\
+    \item Setze den Rest als $r_{i+1} = r_i - \alpha Ad_i$ \\
+    \item Bestimmung des Koeffizienten $\beta$, welcher die neue Suchrichtung ergibt: $\beta = \frac{r_{i+1}^T r_{i+1}}{r_i^T r_i}$ \\
+    \item Setzen der neuen Suchrichtung: $d_{i+1} = r_{i+1} + \beta d_i$ \\
+\end{enumerate}
+Im Falle der Conjugate-Gradient-Methode notiert dabei: $d$ die Suchrichtung des Algorithmus, $r$ den Rest (Abstand zur korrekten Lösung) sowie $\alpha$ und $\beta$ entsprechende Koeffizienten.
+
+% Ergänzung der Bedeutungen der einzelnen Symbole
+
+\subsubsection{Diskretisierung von Gebieten}
+
+In der numerischen Lösung von partiellen Differentialgleichungen, welche auf einem Gebiet $\Omega$ definiert sind, wird die Diskretisierung durch \glqq Meshes\grqq (Deutsch: Gitter/Netz) angewendet, welche unendlich viele Punkte dieses Gebiets durch diskrete Punkte ersetzt, an denen entsprechende Zahlenwerte gegeben sind, sodass nur endlich viele Zahlenwerte gespeichert werden müssen. Diese Punkte werden als Schnittpunkte entsprechender Linien konstanter Koordinaten angegeben (siehe Abbildung~\ref{fig:meshs}). Diese Vereinfachung ermöglicht es, Ableitungen als finite Differenzen zwischen benachbarten Knoten approximativ zu berechnen. Neben orthogonalen Meshes existieren auch krummlinige, welche die Annäherung um bestimmte Formen (wie z.B. Kreise oder Zylinder) durch ein angepasstes krummliniges Koordinatensystem ermöglicht. Auf solche Methoden soll nicht eingegangen werden, da eine Anwendung dieser in der Simulation mit finiten Differenzen eigene komplexe Probleme mit sich bringt.
+\begin{figure}
+    \centering
+    \def\svgwidth{0.75\textwidth}
+    \input{Abbildungen/Abbildung_Diskretisierung.pdf_tex}
+    \caption{Diskretisierung des zweidimensionalen Gebietes $\Omega$}
+    \label{fig:meshs}
+\end{figure}
+Bei der Diskretisierung von Gebieten wird zudem zwischen \emph{versetzten Netzen} (von englisch \glqq staggered\grqq) und \emph{kollokierten Netzen} (von englisch \glqq collocated\grqq) unterschieden. In dieser Arbeit werden kollokierte Netze verwendet, da sie im Sinne des später erwähnten \emph{SIMPLE-Algorithmus} einfacher zu implementieren sind.
+
+\subsubsection{Annäherung von Ableitungen}
+
+\label{sec:abl_approx}
+
+Da im Vergleich zu analytischen Methoden aufgrund der physischen Beschränkungen von Computern eine unendlich kleine Differenz nicht zu berechnen ist, werden numerische Methoden verwendet, um solche Differenzen möglichst effizient bzw. präzise anzunähern.
+Grundsätzlich ließe sich eine Ableitung folgendermaßen annähern:
+\begin{align*}
+    \left.\pd{f(x,y)}{x}\right\vert_{x_0 , y_0} = \frac{f(x_0 +\Delta x,y_0)-f(x_0,y_0)}{\Delta x} + \mathcal{O}(\Delta x)
+\end{align*}
+diese Art der Annäherung ist zwar einfach, jedoch nicht effizient, da sie Fehler der Größenordnung $x$ enthält. Mithilfe der \emph{Taylorreihenentwicklung} lassen sich effizientere Methoden entwickeln. Wird das Verfahren~\cite[nach][S. ~51f.]{lecheler_computational_2022} auf Restterme der Größenordnung $\mathcal{O}(\Delta x^4)$ angewendet, ergibt sich folgende Rechnung:
+\begin{align}
+\label{naeherung4}
+\begin{split}
+    \left. \pd{f(x,y)}{x} \right\vert_{x_0,y_0} &= \frac{f(x_0-2\Delta x,y_0) - 8 f(x_0 -\Delta x,y_0)}{12\Delta x} \\
+    &+ \frac{8f(x_0+\Delta x, y_0) - f(x_0 + 2\Delta x, y_0)}{12\Delta x} + \mathcal{O}(\Delta x^4),
+    \end{split}
+\end{align}
+da ($f^{(n)}$ ist als Ableitung nach $x$ zu verstehen)
+\begin{align*}
+    q_1 &= f(x_0 -2\Delta x) = f(x_0) -2\left.f^{(1)}\right\vert_{x_0,y_0} \Delta x + 2 \left.f^{(2)}\right\vert_{x_0,y_0} \Delta x^2 - \frac{8}{6} \left.f^{(3)}\right\vert_{x_0,y_0} \Delta x^3 \\
+    &+ \frac{16}{24}\left.f^{(4)}\right\vert_{x_0,y_0} \Delta x^4 + \mathcal{O}(\Delta x ^5) \\
+    q_2 &= -8f(x_0 -\Delta x) = -8f(x_0)+8\left.f^{(1)}\right\vert_{x_0,y_0} \Delta x -4 \left.f^{(2)}\right\vert_{x_0,y_0} \Delta x^2 + \frac{8}{6} \left.f^{(3)}\right\vert_{x_0,y_0} \Delta x^3 \\
+    &- \frac{8}{24}\left.f^{(4)}\right\vert_{x_0,y_0} \Delta x ^4+ \mathcal{O}(\Delta x ^5) \\
+    q_3 &= 8f(x_0 +\Delta x) = 8f(x_0) +8\left.f^{(1)}\right\vert_{x_0,y_0} \Delta x +4 \left.f^{(2)}\right\vert_{x_0,y_0} \Delta x^2 + \frac{8}{6} \left.f^{(3)}\right\vert_{x_0,y_0} \Delta x^3 \\
+    &+ \frac{8}{24}\left.f^{(4)}\right\vert_{x_0,y_0} \Delta x ^4+ \mathcal{O}(\Delta x ^5) \\
+    q_4 &= -f(x_0 +2\Delta x) = -f(x_0) -2\left.f^{(1)}\right\vert_{x_0,y_0} \Delta x -2 \left.f^{(2)}\right\vert_{x_0,y_0} \Delta x^2 - \frac{8}{6} \left.f^{(3)}\right\vert_{x_0,y_0} \Delta x^3 \\
+    &- \frac{16}{24}\left.f^{(4)}\right\vert_{x_0,y_0} \Delta x^4 + \mathcal{O}(\Delta x ^5) \\
+    \Rightarrow \sum_{b=1}^{4} q_b &= f(x_0-2\Delta x) - 8f(x_0 - \Delta x) + 8f(x_0 + \Delta x) - f(x_0 + 2\Delta x) \\
+    &= 0 + 12 \left.f^{(1)}\right\vert_{x_0 , y_0} \Delta x + 0 + 0 + 0 + \mathcal{O}(\Delta x^5) \\
+    \Rightarrow \frac{\sum_{b=1}^{4} q_b}{12\Delta x} &= \left.f^{(1)}\right\vert_{x_0 , y_0} + \mathcal{O}(\Delta x^4). \\
+\end{align*}
+Da diese nur Fehler der Ordnung $\mathcal{O}(\Delta x^4)$ und höher enthält, soll diese Art der Annäherung für die Simulation verwendet werden.
+Auch zweite (gemischte) Ableitungen lassen sich mit Gleichung~\ref{naeherung4} bestimmen, indem als Funktion die erste Ableitung eingesetzt wird und diese ebenfalls angenähert wird, sodass sich die Gleichung:
+\begin{align*}
+    \pdsu{f}{x}{y} &= \frac{\left.\left( \pd{f}{y}\right)\right\lvert_{i,j-2} - 8\left.\left( \pd{f}{y}\right)\right\lvert_{i,j-1}+8\left.\left( \pd{f}{y}\right)\right\lvert_{i,j+1}-\left.\left( \pd{f}{y}\right)\right\lvert_{i,j+2}}{12\Delta x} + \mathcal{O}(\Delta x^3) \\
+\end{align*}
+ergibt.
+Diese Annäherungen sind wichtiger Bestandteil der Simulation, welche in~\autoref{sec:sim} erläutert wird.
+
+% Gegebenenfalls bei Simulation Gleichungen plattformunabhängig verwenden, Ergebnisse in R darstellen

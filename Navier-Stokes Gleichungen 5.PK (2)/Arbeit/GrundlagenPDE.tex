@@ -1,0 +1,216 @@
+Funktionen, welche durch partielle Differentialgleichungen beschrieben werden sind, im Gegensatz zu solchen, die durch gewöhnliche Differentialgleichungen beschrieben werden, von mehreren Variablen abhängig, sodass nicht nur Ableitungen verschiedener Ordnungen auftreten können, sondern auch derartige, die verschiedene Variablen aufweisen. Daraus entsteht eine enorme Vielfalt, welche unterschiedlichste Lösungsmethoden erfordert. Dieses Kapitel soll kurz auf die Klassifizierung der Euler-Gleichung eingehen.
+Die Euler-Gleichung beschreibt ein System partieller quasi-linearer Differentialgleichungen zweiter Ordnung. Ein System partieller Differentialgleichungen ist quasi-linear, wenn die Ableitungen höchster Ordnung des Systems linear sind, also nur von den unabhängigen Variablen des Systems sowie (möglicherweise) der Lösungsfunktion selbst abhängig sind. 
+
+\subsubsection{Fourier-Transformationen}
+
+Fourier-Transformationen dienen dazu, komplizierte Funktionen zu vereinfachen, indem sie in ihre sogenannte \emph{Fourier-Transformierte} umgewandelt werden, mit dieser Transformierten Berechnungen - wie die Lösung einer partiellen Differentialgleichung - anzustellen und anschließend durch eine Rücktransformation die gesuchte Lösung zu erhalten. Diese Transformationen basieren dabei auf den \emph{Fourier-Reihen}, welche $2\pi$ -periodische Funktionen als Linearkombination von Sinus- und Kosinus-Funktionen darstellen (dabei soll der Herleitung, wie sie in~\cite[S. 482 ff.]{engel_taylorentwicklung_2020} dargestellt ist, gefolgt werden):
+\begin{Definitionbox}[]
+    Sei ein geeignetes Skalarprodukt $\braket{u,v}$ definiert als
+    \begin{align*}
+        \braket{u,v}=\int_{-\pi}^{\pi}{u(x)v(x)\dfr x},
+    \end{align*}
+    $\mathcal{B}=\left\{\cos(0x),\cos(kx),\sin(kx)\right\}$ für $\forall k\in \mathbb{N}\cup \{\infty \}$ eine orthogonale Basis und $f(x)$ eine periodische Funktion. Um $\mathcal{B}$ zu normieren, wird durch $\sqrt{\braket{\sin(kx),\sin(kx)}}$ (analog für $\cos(kx)$) geteilt:
+    \begin{align*}
+        \mathcal{B}= \left\{ \frac{1}{\sqrt{2\pi}}, \frac{1}{\sqrt{\pi}}\cos(kx),\frac{1}{\sqrt{\pi}}\sin(kx)\right\}.
+    \end{align*}
+    Für $f$ gilt folgende Darstellung:
+    \begin{align}
+    \label{eq:Fourierreihe}
+        f(x) = a_0 + \sum_{k=1}^{\infty}{a_k \cos(kx)+b_k \sin(kx)},
+    \end{align}
+    wobei:
+    \begin{align*}
+        a_0 &= \braket{f(x),\frac{1}{\sqrt{2\pi}}} = \frac{1}{2\pi}\int_{-\pi}^{\pi}{f(x)\dfr x} \\
+        a_k &= \braket{f(x),\frac{1}{\sqrt{\pi}}\cos(kx)}=\frac{1}{\pi}\int_{-\pi}^{\pi}{f(x)\cos(kx)\dfr x} \\
+        b_k &= \braket{f(x),\frac{1}{\sqrt{\pi}}\sin(kx)}=\frac{1}{\pi}\int_{-\pi}^{\pi}{f(x)\sin(kx)\dfr x} \\
+    \end{align*}
+\end{Definitionbox}
+Eine Verallgemeinerung auf nicht-periodische Funktionen (bzw. solche unendlicher Periodenlänge) wird durch die Fourier-Transformation beschrieben:
+Zunächst wird die \emph{Euler-Moivre-Formel} verwendet, um die Fourier-Reihe in Abhängigkeit von Exponentialfunktionen zu formulieren, dann wird aus~\eqref{eq:Fourierreihe}
+\begin{align}
+\label{eq:komplexe_reihe}
+    f(x) = a_0 + \sum_{k=1}^{\infty}{a_k \cos(kx)+b_k \sin(kx)}=\sum_{k=0}^{\infty}{c_k \e{ikx}}.
+\end{align}
+Wird die Summe~\eqref{eq:komplexe_reihe} in ihre positiven und negativen Teile aufgespalten und erneut die Euler-Moivre-Formel angewendet, ergibt sich:
+\begin{align}
+\label{eq:komplexe_reihe_sincos}
+    f(x) &= c_0 + \sum_{k\geq 1}^{\infty}{c_k \left( \cos(kx) + i \sin(kx)\right) + c_{-k} \left( \cos(-kx) + i \sin(-kx)\right)} \notag \\
+    &= c_0 + \sum_{k\geq 1}^{\infty}{c_k \left( \cos(kx) + i \sin(kx)\right) + c_{-k} \left( \cos(kx) - i \sin(kx)\right)} \notag \\
+    &= c_0 + \sum_{k\geq 1}^{\infty}{(c_k + c_{-k}) \left( \cos(kx)\right) + i(c_k - c_{-k})\left( \sin(kx)\right)},
+\end{align}
+wobei $z_{k}=z_{-k}^\star=\Re(z_k)+i\Im(z_k)$ gelten muss. Beim Einsetzen dieser Beziehung in~\eqref{eq:komplexe_reihe_sincos}, stellt sich heraus, dass:
+\begin{align*}
+    c_0 = a_0 \qquad c_k = \frac{1}{2}(a_k-ib_k).
+\end{align*}
+Da auch im komplexen Fall $c_k = \braket{f(x),\e{-ikx}}$ gelten muss und von einer Orthonormalbasis ausgegangen wird, gilt:
+\begin{align}
+    c_k &= \frac{1}{2}(a_k - i b_k) \notag \\
+    &= \frac{1}{2}\left(\frac{1}{\pi}\int_{-\pi}^{\pi}{f(x)\cos(kx)\dfr x} - i\frac{1}{\pi}\int_{-\pi}^{\pi}{f(x)\sin(kx)\dfr x}\right) \notag \\
+    &= \frac{1}{2\pi}\left(\int_{-\pi}^{\pi}{f(x)(\cos(kx) - i\sin(kx))\dfr x}\right) \notag \\
+    &= \frac{1}{2\pi}\int_{-\pi}^{\pi}{f(x)\e{-ikx}\dfr x}. \\
+\end{align}
+Durch die Substitution $y=\frac{2\pi}{L}x$ ist diese Darstellung auf nicht-$2\pi$-periodische Funktionen erweiterbar:
+\begin{align*}
+    f(x) &= \sum_{k=0}^{\infty}{c_k \e{ikx}} \qquad k=0,\frac{2\pi}{L},2\frac{2\pi}{L},\ldots \\
+    c_k &= \frac{1}{L}\int_{\frac{L}{2}}^{\frac{L}{2}}{f(x)\e{i\frac{2\pi}{L}x}\dfr x},
+\end{align*}
+wobei die Periodenlänge für nicht-periodische Funktionen gegen Unendlich strebt:
+\begin{align*}
+    \tilde{f(x)} = L c_k = \int_{-\infty}^{\infty}{f(x)\e{-ikx} \dfr x}
+\end{align*}
+und $\tilde{f(x)}$ die \emph{Fourier-Transformierte} der Funktion $f(x)$ notiert. Die Rücktransformation kann über ($\Delta k$ notiert die Differenz zwischen einem benachbarten Paar von Werten $k$):
+\begin{align*}
+    f(x) &= \frac{L}{2\pi}\sum_{k=-\infty}^{\infty}{\frac{2\pi}{L}c_k \e{ikx}} = \frac{1}{2\pi}\sum_{k=-\infty}^{\infty}{\Delta k Lc_k \e{ikx}} \\
+    \text{für $L\to \infty$:} \\
+    f(x) &= \frac{1}{2\pi}\int_{-\infty}^{\infty}{c_k \e{ikx} L \dfr k} \\
+    f(x) &= \frac{1}{2\pi}\int_{-\infty}^{\infty}{\tilde{f(x)}\e{ikx}\dfr k}
+\end{align*}
+definiert werden.
+
+\subsubsection{Klassifizierung partieller Differentialgleichungen}
+
+Buch~\cite[S. 115]{epstein_partial_2017} nennt folgende allgemeine Form partieller Differentialgleichungen zweiter Ordnung:
+\begin{align}
+\label{zeile1}
+    a u_{xx} + 2b u_{xy} + c u_{yy} = d
+\end{align}
+bzw. im quasi-linearen Fall:
+\begin{align*}
+    a(x,y,u,u_x,u_y) u_{xx} + 2b(x,y,u,u_x,u_y) u_{xy} + c(x,y,u,u_x,u_y) u_{yy} = d(x,y,u,u_x,u_y).
+\end{align*}
+Gegebene Anfangsbedingungen der Form 
+\begin{align*}
+    u=\hat{u}(r), \quad u_x = \hat{u}_x (r), \quad u_y = \hat{u}_y (r)
+\end{align*}
+(mit dem Kurvenparameter $r$) - welche für die Lösung von Gleichungen dieser Form unerlässlich sind - müssen offensichtlich die Gleichung selbst erfüllen. Außerdem muss nach der Kettenregel und der Bedingung, dass alle Ableitungen an jedem Punkt der gegebenen Kurve $r$ bzw. $\hat{u}(r)$ definiert sein müssen, gelten:
+\begin{align}
+\label{zeile2}
+    \diff{\hat{u}_x}{r} &= u_{xx} \diff{\hat{x}}{r} + u_{xy} \diff{\hat{y}}{r} \\ 
+\label{zeile3}
+    \diff{\hat{u}_y}{r} &= u_{yy} \diff{\hat{y}}{r} + u_{xy} \diff{\hat{x}}{r}.
+\end{align}
+Werden nun die Gleichungen ~\eqref{zeile1}, ~\eqref{zeile2} und ~\eqref{zeile3}, welche von den Anfangsbedingungen erfüllt werden müssen, in ein Gleichungssystem kombiniert, ergibt sich:
+\begin{align}
+\label{lgs_qual}
+% Verschönern!!!
+    \renewcommand{\arraystretch}{1.15}
+    \begin{bmatrix}
+        a & 2b & c \\
+        \diff{\hat{x}}{r} & \diff{\hat{y}}{r} & 0 \\
+        0 &  \diff{\hat{x}}{r} & \diff{\hat{y}}{r} \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{xx} \\
+        u_{xy} \\
+        u_{yy} \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        d \\
+        \diff{\hat{u}_x}{r} \\
+        \diff{\hat{u}_y}{r}
+    \end{bmatrix}
+\end{align}
+damit dieses Gleichungssystem eindeutig lösbar ist, muss die Determinante der Koeffizientenmatrix ungleich null sein. Nach der \emph{Regel von Sarrus} ergibt sich für Gleichung ~\eqref{lgs_qual}:
+\begin{align}
+\label{determinante}
+\determ{A} = a\cdot \diff{\hat{y}}{r} \cdot \diff{\hat{y}}{r} + 0 + c \cdot \diff{\hat{x}}{r}\cdot \diff{\hat{x}}{r} - 2b \cdot \diff{\hat{x}}{r} \cdot \diff{\hat{y}}{r} - 0 - 0.
+\end{align}
+Wäre das Gleichungssystem an jeder Position auf der Anfangskurve $r(x,y)$ eindeutig lösbar, sind diese Anfangsbedingungen nicht ausreichend, um die partielle Differentialgleichung zu lösen, da sie an keiner Stelle vorschreiben, wie sich die Lösungsfunktion außerhalb dieser gegebenen Kurve verhalten. Es lässt sich zeigen, \begin{comment}
+    ~\cite{Epstein}
+\end{comment}
+dass gerade an den Stellen, an denen das Gleichungssystem nicht eindeutig lösbar ist, Charakteristiken (eine Definition soll hier nicht genannt werden) aufweist. Diese sind essenziell für die Lösungstheorie partieller Differentialgleichungen und bestimmen die Art und Weise partielle Differentialgleichungen zu lösen. Setzen wir ~\eqref{determinante} gleich null, und multiplizieren beide Seiten mit $\left(\diff{r}{\hat{x}}\right)^2$, erhalten wir eine quadratische Gleichung, deren Lösungen mit der \emph{pq-Formel} gefunden werden können:
+\begin{align}
+\label{quad_gleichung_det}
+    \lr{(}{)}{\diff{\hat{y}}{\hat{x}}}_{1,2} = \frac{b}{a} \pm \sqrt{\lr{(}{)}{\frac{b}{a}}^{2} - \frac{c}{a}}.
+\end{align}
+Für die Diskriminante $D$ der Gleichung können folgende Fälle eintreten:
+\begin{align}
+    x_{1,2} = 
+    \begin{cases}
+        D>0: \quad &x_1 \neq x_2  \land x_1, x_2 \in \mathbb{R} \\
+        D=0: \quad &x_1 = x_2 \land x_1, x_2 \in \mathbb{R} \\
+        D<0: \quad &x_1 \neq x_2 \land x_1, x_2 \in \mathbb{C} \\
+    \end{cases}
+\end{align}
+\begin{Definitionbox}[]
+    Eine partielle Differentialgleichung zweiter Ordnung ist: \\
+    \textbf{hyperbolisch}, wenn es zwei unterschiedliche Lösungen ($\in \mathbb{R}$) der Gleichung ~\eqref{quad_gleichung_det} gibt, \\
+    \textbf{parabolisch}, wenn es eine Lösung ($\in \mathbb{R}$) gibt, \\
+    \textbf{elliptisch}, wenn es zwei unterschiedliche Lösungen ($\in \mathbb{C}$) gibt.
+\end{Definitionbox}
+
+Um die Euler-Gleichungen nun genauer zu betrachten, soll ihre Fourier-Transformierte berechnet werden, um den Umgang mit dieser Gleichung zu vereinfachen.
+Dazu soll die Euler-Gleichung in folgendes Gleichungssystem umgeschrieben werden:
+\begin{align}
+\label{eq:euler_system}
+    &\begin{bmatrix}
+        0 & 0 & 0 \\
+        0 & \rho  & 0 \\
+        0 & 0 & \rho \\
+        0 & u_1   & u_2 \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        \rho_t \\
+        u_{1_t} \\
+        u_{2_t} \\
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        \rho & 0 & 0 \\
+        2\rho u_1 & 0 & 1 \\
+        \rho u_2 & \rho u_1 & 0 \\
+        \rho e + p + u_1 & u_2 & u_1 \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{1_x} \\
+        u_{2_x} \\
+        p_x \\
+    \end{bmatrix} \\
+    &+
+    \begin{bmatrix}
+    \rho             & 0 & 0 \\
+    \rho u_1         & \rho u_2 & 0 \\
+    2\rho u_2        & 0 & 1 \\
+    \rho e + p + u_2 & u_1 & u_2 \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{2_y} \\
+        u_{1_y} \\
+        p_y \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0 \\
+        \rho g_1 \\
+        \rho g_2 \\
+        \rho (u_1 g_1 + u_2 g_2)\\
+    \end{bmatrix}
+\end{align}
+Für die reine Klassifizierung der Euler-Gleichungen werden folgende Vereinfachungen angenommen, um die Fourier-Transformation zu ermöglichen und damit die Analyse zu simplifizieren: es existiere eine Lösung $u$ der Euler-Gleichung, welche sowohl stetig als auch integrierbar ist; der Einfluss externer Kräfte (z.B. der Gravitation) wird vernachlässigt, damit die Funktion $u(x,y,t)$ in allen unabhängigen Variablen im Unendlichen gegen null strebt (\cite[nach][S. 802]{bronstejn_taschenbuch_2020}).
+
+
+% HIER DEN REST ENTFERNEN
+Damit solche Charakteristiken nun existieren, muss, wie im Fall von partiellen Differentialgleichungen zweiter Ordnung, für festgelegte Anfangsbedingungen das ursprüngliche Gleichungssystem erfüllt sein sowie die Kettenregel der Differentiation gelten. Unter diesen Einschränkungen ergibt sich für die Euler-Gleichung~\eqref{eq:euler} folgendes System:
+\begin{align*}
+    fda
+\end{align*}
+Ein Ansatz zur Gewinnung der Charakteristiken ist die Lösung der Eigenwert-Gleichung für charakteristische Kurven, wobei diese durch die Gleichungen
+\begin{align}
+    \diff{x}{s} = a(x,y,u) \qquad \diff{y}{s}=b(x,y,u) \qquad \diff{u}{s} = c(x,y,u)
+\end{align}
+gegeben sind. Diese Charakteristiken sind zu integrieren und offenbaren die Lösung der partiellen Differentialgleichung, da
+\begin{align*}
+    \diff{x}{s} \pd{u}{x} + \diff{y}{s} \pd{u}{y} = \diff{u}{s}
+\end{align*}
+ist. Unter Angabe geeigneter Anfangsbedingungen kann diese nun gewöhnliche Differentialgleichung über dem Kurvenparameter $s$ gelöst werden. Da im Fall von einem Gleichungssystem partieller Differentialgleichungen der Form
+\begin{align*}
+    \boldsymbol{Au_x} + \boldsymbol{Bu_y} + \boldsymbol{Cu_t} = \boldsymbol{D}
+\end{align*}
+(wie in Gleichung~\eqref{eq:euler_system}) die Koeffizienten der Ableitungen durch Matrizen gegeben sind, ergibt sich:
+\begin{align*}
+    \boldsymbol{A}-\boldsymbol{B}\diff{x}{y} - \boldsymbol{C}\diff{x}{t} = 0
+\end{align*}
+als Eigenwertgleichung für die Charakteristiken des Systems.
+
+%HIER WEITER: Lösung der Eigenwert-Gleichung

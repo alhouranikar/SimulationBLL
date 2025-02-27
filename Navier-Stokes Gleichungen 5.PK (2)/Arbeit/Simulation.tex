@@ -1,0 +1,139 @@
+Im folgenden Abschnitt soll folgende abweichende Notation verwendet werden:
+\begin{table}[H]
+    \begin{tabular}{c l}
+        $t$ & aktueller Zeitschritt \\
+        $n$ & aktuelle Iteration des Algorithmus $\mathcal{A}_1$ \\
+        $u_{i,j,t}$ & Geschwindigkeit in $x$-Richtung an der Stelle $i,j$ zum Zeitpunkt $t$ \\
+        $v_{i,j,t}$ & Geschwindigkeit in $y$-Richtung an der Stelle $i,j$ zum Zeitpunkt $t$ \\
+        $\mathcal{C}_{i,j,t}(u_x)$ & ~\eqref{naeherung4} $- \mathcal{O}(\Delta x^4)$ \\
+        $\mu_i$ & Ausdehnung des Gebiets $\Omega$ in x-Richtung (analog zum Lebesgue-Maß) \\
+        $\mu_j$ & Ausdehnung des Gebiets in y-Richtung \\
+    \end{tabular}
+\end{table}
+Matrizen seien nur durch Großbuchstaben dargestellt, der Rest der Notation behält seine Gültigkeit.
+
+\subsection{Erläuterung der Simulation}
+\label{sec:sim}
+
+Die Simulation beginnt mit der Angabe von Anfangsbedingungen, von welchen erwartet wird, dass diese die bestimmenden Gleichungen erfüllen. Zudem müssen Randbedingungen angegeben sein, wobei sich unsere Simulation lediglich auf die Angabe von \emph{Dirichlet-Randbedingungen}, also solchen, denen die Angabe einer Variable zugrunde liegt, erstreckt. Zuvor sollen noch einige wichtige Begriffe geklärt werden.
+\begin{Definitionbox}[]
+    Die CFL-Bedingung (Courant-Friedrichs-Lewis) setzt für eine präzise numerische Simulation die Größe des Zeitschritts $\Delta t$ fest als:
+    \begin{align*}
+        \Delta t = \CFL \frac{\Delta x}{u_{max}}.
+    \end{align*}
+    Dabei notiert $\CFL$ die CFL-Nummer.
+\end{Definitionbox}
+Die CFL-Nummer muss für explizite (zum Zeitpunkt $t$ sind alle Größen bekannt) Methoden kleiner als 1 sein ($\CFL < 1$), damit die numerische Lösung konvergent bleibt (\cite[S. 65]{lecheler_computational_2022}). Die Diskretisierung ist der Simulation vorgegeben, je nach physikalischer Interpretation des Gebiets. Anschaulich fordert die CFL-Bedingung also, dass der Zeitschritt, welcher errechnet werden soll, im Verhältnis zu der Zeit, die ein Partikel mit maximaler Geschwindigkeit von einer Zelle zur nächsten benötigt, kleiner als 1 sein soll, also darf das schnellste Partikel nicht an der nächsten Zelle angekommen sein, wenn die Simulation den nächsten Frame erreicht.
+Um dieser Diskretisierung des Zeitintervalls gerecht zu werden, soll zunächst auf die Finite-Differenzen-Methode angewendet auf die Zeit eingegangen werden. % Formulierung VERBESSERN
+Gleichung~\ref{naeherung4} bot bereits eine Näherung, welche bis zur Ordnung $\mathcal{O}(\Delta x^4)$ genau ist. Nachteilig stellt sich an dieser Diskretisierung bei Anwendung auf die Zeit der Fakt heraus, dass zum Zeitpunkt $n$ bereits Werte zum Zeitpunkt $n+1$ bekannt sein müssen. Dieses Faktum ist zwar Grundlage eigener Methoden in der numerischen Mathematik (der sogenannten impliziten Methoden), jedoch soll sich die Simulation auf zeitlich rein explizite Methoden beschränken. Deshalb soll für die Simulation folgende Approximation verwendet werden, welche nur zeitlich bereits zurückliegende Werte verwendet:
+\begin{align}
+\label{eq:backward_time}
+    \left.\pd{u}{x}\right\lvert_{i,j} &= \frac{3u_{i,j,t}-4u_{i,j,t-1}+u_{i,j,t-2}}{2\Delta t} + \mathcal{O}(\Delta t^2) \\
+    \mathcal{B}_{i,j,t}(u_t) &:= \frac{3u_{i,j,t}-4u_{i,j,t-1}+u_{i,j,t-2}}{2\Delta t} \\
+\end{align}
+(es ist $t-1=t-\Delta t$ zu setzen, da die Einheit von $t$ die Frames der Simulation sind). Zunächst soll die Impulserhaltungsgleichung (die einzelnen Impulserhaltungen aus Gleichung~\eqref{eq:euler} zusammengefasst in einer Matrix)
+\begin{align*}
+    \pd{}{t}\begin{bmatrix}
+        \rho u \\
+        \rho v \\
+    \end{bmatrix}
+    +
+    \nabla \begin{bmatrix}
+        \rho u^2 + p & \rho uv \\
+        \rho vu & \rho v^2 + p \\
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \rho g_x \\
+        \rho g_y
+    \end{bmatrix}
+\end{align*}
+diskretisiert werden. Mit Gleichung~\eqref{eq:backward_time} und~\eqref{naeherung4} ergibt sich:
+\begin{align}
+\label{eq:diskret_system}
+    \begin{bmatrix}
+        \mathcal{B}_{i,j,t}(u_t) \\
+        \mathcal{B}_{i,j,t}(v_t) \\
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        \mathcal{C}_{i,j,t}(u^2_{x}) & \mathcal{C}_{i,j,t}((uv)_y) \\
+        \mathcal{C}_{i,j,t}((vu)_x) & \mathcal{C}_{i,j,t}(v_{y}^2) \\
+    \end{bmatrix}
+    + \nabla p \boldsymbol{E} = \begin{bmatrix}
+        \rho g_x \\
+        \rho g_y \\
+    \end{bmatrix}.
+\end{align}
+Diese Gleichung muss für $\forall(i,j,t)\in \Omega \times [0,T]$ gelten, wobei es sich aus Gründen der Übersichtlichkeit anbietet, die $x$- und $y$-Komponenten der Geschwindigkeit für jede Zelle zu separieren. Damit jedoch die Gleichung in ein Gleichungssystem mit dem Lösungsvektor $\begin{bmatrix}
+    u_{1,1,t}, u_{1,2,t}, \ldots, u_{\mu_i, \mu_j , t}
+\end{bmatrix}$
+umgeschrieben werden kann, muss eine Abbildung $\square:\mathbb{N}^{2} \mapsto \mathbb{N}$ definiert werden, welche einen Eintrag des diskretisierten Gebiets $\Omega$ auf einen Eintrag in einem Intervall der Größe $\mu_i \mu_j$ abbildet. Es sollen die Axiome:
+\begin{align*}
+    \square(i,j-c) = \mu_j (i-1) + j - c \qquad \text{bzw.} \qquad \square(i-c,j) = \mu_j (i-1-c) + j \\
+    \text{wenn } i-c < 0 \text{, dann } i-c = 0 \text{ (gilt auch für die Rechnung, $i-1=-1\Rightarrow i-1 = 0$)}
+\end{align*}
+gelten. Nun kann die erste Zeile von~\eqref{eq:diskret_system} in ein Gleichungssystem für den Druckgradienten in $x$-Richtung für jede Zelle umgewandelt werden:
+\resizebox{\linewidth}{!}{
+\begin{minipage}{\textheight}
+\begin{align}
+\label{eq:geschw_x}
+    \begin{bmatrix}
+        \frac{3}{2\Delta t} & \frac{8}{12\Delta x}v_{1,2,t} & -\frac{1}{12\Delta x}v_{1,3,t} & \cdots & \cdots & \frac{8}{12\Delta x} u_{2,1,t} & \cdots & -\frac{1}{12\Delta x}u_{3,1,t} & \cdots & 0 \\
+        -\frac{8}{12\Delta x}v_{1,1,t} & \frac{3}{2\Delta t} & \frac{8}{12\Delta x}v_{1,3,t} & -\frac{1}{12\Delta x}v_{1,4,t} & \cdots & \frac{8}{12\Delta x} u_{2,1,t} & \cdots & -\frac{1}{12\Delta x}u_{3,1,t} & \cdots & 0 \\
+        \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+        0 & \cdots & \frac{1}{12\Delta x}u_{\mu_{i}-2, \mu_j,t} & \cdots & -\frac{8}{12\Delta x}u_{\mu_i - 1, \mu_j,t} & \cdots & \cdots & \frac{1}{12\Delta x}v_{\mu_i, \mu_j - 2, t} & -\frac{8}{12\Delta x}v_{\mu_i, \mu_j - 1,t} & \frac{3}{2\Delta t} \\
+    \end{bmatrix}
+    \begin{bmatrix}
+        u_{1} \\
+        u_2 \\
+        u_3 \\
+        \vdots \\
+        u_{\square(2,1)} \\
+        \vdots \\
+        u_{\square(3,1)} \\
+        \vdots \\
+        u_{\square(\mu_i - 2, \mu_j)} \\
+        \vdots \\
+        u_{\square(\mu_i - 1, \mu_j)} \\
+        \vdots \\
+        u_{\mu_i \mu_j - 2} \\
+        u_{\mu_i \mu_j - 1} \\
+        u_{\mu_i \mu_j} \\
+    \end{bmatrix}
+    =
+    Q- \begin{bmatrix}
+        \mathcal{B}_{1,1,t} \\
+        \mathcal{B}_{1,2,t} \\
+        \vdots \\
+        \mathcal{B}_{\mu_i, \mu_j, t} \\
+    \end{bmatrix}
+    -
+    \begin{bmatrix}
+        C_{1,1,t}(p_x) \\
+        C_{1,2,t}(p_x) \\
+        \vdots \\
+        C_{\mu_i,\mu_j,t}(p_x) \\
+    \end{bmatrix}
+\end{align}
+\end{minipage}
+}
+Analog zu~\eqref{eq:geschw_x} lässt sich auch eine Formel in $y$-Richtung ableiten, welche wegen $\Delta x = \Delta y$ allerdings fast gleich ist. Aufgrund des enormen Umfangs der Gleichung, sei sie alternativ definiert als:
+\begin{align}
+\label{eq:geschw_x_einf}
+    Z U = Q - T - P.
+\end{align}
+Die sich ergebende Geschwindigkeit $u$ bzw. $v$ für jede Zelle erfüllt in den meisten Fällen nicht die Kontinuitätsgleichung~\cite[nach][s. 213]{ferziger_computational_2020}, sodass eine Korrektur vorgenommen werden muss. Dazu ergibt sich folgende Poisson-Gleichung für den Druck, welche aus den Impulserhaltungsgleichungen sowie der Kontinuitätsgleichung folgt~\cite[siehe][S. 194]{ferziger_computational_2020}:
+\begin{align}
+    \nabla_i ^2p = -\nabla_i\left( \nabla (\rho u_i \vec{u}) \right)
+\end{align}
+(hier notiert der Index $i$ die $i$-te Komponente) und mit den Methoden aus~\autoref{sec:abl_approx} (Annäherung der zweiten Ableitung sowie der gemischten Ableitung) sowie einer Umformung ergibt sich schließlich:
+\begin{align}
+    \begin{split}
+    (p_{i,j,t})_x &= -\rho \left(u_{i-2,j,t}v_{i-2,j,t}-8u_{i-1,j,t}v_{i-1,j,t}+8u_{i+1,j,t}v_{i+1,j,t}-u_{i+1,j,t}v_{i+1,j,t} \right)\\
+    &+ -\rho \left(u_{i-2,j,t}u_{i-2,j,t}-8u_{i-1,j,t}u_{i-1,j,t}+8u_{i+1,j,t}u_{i+1,j,t}-u_{i+1,j,t}u_{i+1,j,t}12 \right)\\
+    &+ p_{i+2,j,t} - 16p_{i+1,j,t} - 16p_{i-1,j,t} + p_{i-2,j,t} \\
+    \end{split}
+\end{align}
+
+\subsection{Annahmen mathematischer/ physikalischer Natur}

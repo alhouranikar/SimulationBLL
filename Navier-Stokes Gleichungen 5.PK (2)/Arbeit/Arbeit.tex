@@ -1,0 +1,157 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc} 
+\usepackage{csquotes}
+\usepackage{blindtext}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{verbatim} % Kommentare
+\usepackage{enumitem} % itemize-Umgebungen verschönern
+\usepackage{graphicx} % für \includegraphics
+\usepackage{anyfontsize} % verschiedene Schriftgrößen für Abbildungen
+\usepackage{mathrsfs} % für geschwungene Schriftart
+\usepackage{amsthm} % für normalen Text innerhalb von Definitionen
+\usepackage{biblatex} % für modernere Weise des Zitierens
+\usepackage{xcolor} % für importieren von Inkscape-Dateien
+\usepackage{float} % damit Tabellen festen Ort haben können
+\usepackage{tcolorbox} % graue Box um Definitionen
+\usepackage{braket} % Bra-Ket Notation
+%\usepackage{classicthesis}
+
+\usepackage[a4paper, left=4cm, right=2cm]{geometry}
+\usepackage{mathpazo}
+\usepackage{fontspec} %\setmainfont
+%\setmainfont{mathpazo}
+\usepackage{ragged2e} %Blocksatz
+\usepackage{scrlayer-scrpage}
+\clearpairofpagestyles
+\ihead{Karam Alhourani, Linus Lungwitz}
+%\chead{Navier-Stokes-Gleichungen}
+\cfoot{Seite \thepage}
+\usepackage{setspace}
+\spacing{1.5}
+
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}} % partielle Ableitung
+\newcommand{\pds}[2]{\frac{\partial^2 #1}{\partial #2^2}} % zweite partielle Ableitung nach einer Variable
+\newcommand{\pdsu}[3]{\frac{\partial^2 #1}{\partial #2 \partial #3}} % zweite partielle Ableitung nach zwei Variablen
+\newcommand{\diff}[2]{\frac{d #1}{d #2}} % normale Ableitung
+\newcommand{\determ}[1]{\text{det}\,\left(#1\right)} % Determinante
+\newcommand{\lr}[3]{\left#1 #3 \right#2} % left-right-Umgebung
+\newcommand{\dfr}{\text{d}} % Differential für das Ende von Integralen
+\newcommand{\supp}{\text{supp}} % Träger einer Funktion
+\newcommand{\norm}[1]{\left \Vert #1 \right \Vert} % Norm einer Funktion / Vektor
+\newcommand{\e}[1]{\text{e}^{#1}} % setzen von Exponentialfunktion
+\newcommand{\CFL}{c_{\text{CFL}}}
+\newcommand{\mb}{\mathcal{B}_{i,j,t}}
+\newcommand{\mc}{\mathcal{C}_{i,j,t}}
+\newcommand{\znd}{Z_{\overline{D}}}
+
+\theoremstyle{definition}
+\newtheorem{Definition}{Definition}[section]
+\newtheorem{Anmerkung}{Anmerkung}[section]
+\newtcolorbox[auto counter, number within=section]{Definitionbox}[1][]{
+    colback=gray!15,
+    titlerule=0mm,
+    fonttitle=\bfseries,
+    colbacktitle=gray!15,
+    coltitle=black,
+    sharp corners,
+    boxrule=0pt,
+    title={Definition \thetcbcounter \, #1}
+}
+\newtcolorbox[auto counter, number within=section]{Theorembox}[1][]{
+    colback=gray!15,
+    titlerule=0mm,
+    fonttitle=\bfseries,
+    colbacktitle=gray!15,
+    coltitle=black,
+    sharp corners,
+    boxrule=0pt,
+    title={Theorem \thetcbcounter \, #1}
+}
+
+\numberwithin{equation}{section} % Nummerierung der Gleichungen mit Kapiteln
+\counterwithin{figure}{section} % Nummerierung der Bilder mit Kapiteln
+
+\allowdisplaybreaks % Erlauben von Seitenumbrüchen innerhalb von align
+
+\addbibresource{Arbeit/Literatur_5PK.bib} % Literaturverzeichnis
+
+\setcounter{secnumdepth}{3}
+
+\author{Karam Alhourani, Linus Lungwitz}
+\title{Euler-Gleichungen}
+\date{03. März 2025}
+\begin{document}
+\maketitle
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section*{Notation}
+
+\input{Arbeit/Notation}
+
+\newpage
+
+\section{Einführung}
+
+\input{Arbeit/Einfuehrung.tex}
+
+\section{Physikalische Grundlagen}
+
+\subsection{Strömungslehre}
+
+\subsection{Herleitung der Euler-Gleichungen}
+
+\section{Mathematisches Fundament}
+
+\subsection{Grundlagen zu partiellen Differentialgleichungen}
+
+\input{Arbeit/GrundlagenPDE}
+
+\subsection{Sobolew-Räume}
+
+\input{Arbeit/Sobolew-Raueme}
+
+\subsection{Existenz- und Eindeutigkeitssätze für PDEs}
+
+\input{Arbeit/ExistenzundEindeutigkeit}
+
+\subsection{Approximationsmethoden}
+
+\input{Arbeit/Approximationsmethoden}
+
+\subsection{Lösung für Spezialfälle der Navier-Stokes-Gleichungen}
+
+\section{Untersuchungsmethode}
+
+\input{Arbeit/Simulation}
+
+\section{Darstellung der Forschungsergebnisse}
+
+\section{Diskussion}
+
+\section{Fazit}
+
+\section{Anhang}
+
+\subsection{zusätzliche Rechnungen}
+
+\label{sec:rechnungen}
+
+\input{Arbeit/Anhang_Rechnungen}
+
+\subsection{Quelldateien}
+
+\section{Abbildungsverzeichnis}
+
+\printbibliography
+
+\end{document}
