@@ -99,8 +99,60 @@ void next_frame()
 	++akt_frame;
 	frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
 	current_posx = current_posy = 0;
-	//calc_pressure();
+	calc_pressure();
 	current_posx = current_posy = 0;
+	for (int i = 0; i < size_x; ++i)
+	{
+		current_posx = i;
+		for (int j = 0; j < size_y; ++j)
+		{
+			current_posy = j;
+			if (is_boundary.at(current_posx).at(current_posy))
+			{
+				continue;
+			}
+			vector<long double> Hni(2);
+			Hni.at(0) = calc_Hn(1);
+			Hni.at(1) = calc_Hn(2);
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = (*time_stp) * (Hni.at(0) - ((frames.at(akt_frame).at(current_posx - 2).at(current_posy).at(0)
+				- 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy).at(0)
+				+ 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(0)
+				- frames.at(akt_frame).at(current_posx + 2).at(current_posy).at(0))
+				/ (12 * dist)));
+			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = (*time_stp) * (Hni.at(1) - ((frames.at(akt_frame).at(current_posx).at(current_posy - 2).at(0)
+				- 8 * frames.at(akt_frame).at(current_posx).at(current_posy - 1).at(0)
+				+ 8 * frames.at(akt_frame).at(current_posx).at(current_posy + 1).at(0)
+				- frames.at(akt_frame).at(current_posx).at(current_posy + 2).at(0))
+				/ (12 * dist)));
+		}
+	}
+	cout << "jfoejafoiepjaoefjafpjeasifjeoisaf" << endl;
+	for (int u = 0; u < size_x; ++u)
+	{
+		current_posx = u;
+		for (int v = 0; v < size_y; ++v) {
+			current_posy = v;
+			int i = 1;
+			int j = 1;
+			if (is_boundary.at(current_posx).at(current_posy))
+			{
+				continue;
+			}
+			long double temp = (frames.at(akt_frame).at(current_posx - 2).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j)
+				- 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j)
+				+ 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j)
+				- frames.at(akt_frame).at(current_posx + 2).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j))
+				/ (12 * dist);
+			j = 2;
+			temp += (frames.at(akt_frame).at(current_posx - 2).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j)
+				- 8 * frames.at(akt_frame).at(current_posx - 1).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j)
+				+ 8 * frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j)
+				- frames.at(akt_frame).at(current_posx + 2).at(current_posy).at(i) * frames.at(akt_frame).at(current_posx).at(current_posy).at(j))
+				/ (12 * dist);
+			cout << temp << " ";
+		}
+		cout << endl;
+	}
 	//calc_vel();
 	// VERBESSERUNG: calc_pressure und calc_vel in eine Schleife zusammenfassen
 	//calc_dt(umax, dist); //	VERBESSERUNG: überprüfen, ob dt überhaupt geändert werden muss
@@ -112,6 +164,22 @@ void next_frame()
 		ende = make_unique<const double>(frame_anz * (*time_stp));
 	}
 	*/
+}
+
+long double calc_Hn(int i)
+{
+	if (i != 1 && i != 2)
+	{
+		cerr << "Fehler bei der Hn-Methode!" << endl;
+		return 0.0;
+	}
+		int j = 1;
+		long double erg = (-density * (frames.at(akt_frame - 1).at(current_posx - 2).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j) - 8 * frames.at(akt_frame - 1).at(current_posx - 1).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j) + 8 * frames.at(akt_frame - 1).at(current_posx + 1).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j) - frames.at(akt_frame - 1).at(current_posx + 2).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j)) / (12 * dist));
+		j = 2;
+		erg += (-density * (frames.at(akt_frame - 1).at(current_posx - 2).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j) - 8 * frames.at(akt_frame - 1).at(current_posx - 1).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j) + 8 * frames.at(akt_frame - 1).at(current_posx + 1).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j) - frames.at(akt_frame - 1).at(current_posx + 2).at(current_posy).at(i) * frames.at(akt_frame - 1).at(current_posx).at(current_posy).at(j)) / (12 * dist));
+		if(i==2)
+			erg += density * 9.81;
+		return erg;
 }
 
 void calc_dt(double umax, long double dist)
@@ -221,74 +289,7 @@ void ext_force()
 
 void calc_vel()
 {
-	for (int x = 0; x < size_x; ++x)
-	{
-		current_posx = x;
-		for (int y = 0; y < size_y; ++y)
-		{
-			current_posy = y;
-			if (is_solid.at(current_posx).at(current_posy))
-			{ // Geschwindigkeit an solid edge ist immer 0
-				continue;
-			}
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) += 9.81 * (*time_stp); // Erhöhung d. Geschwindigkeit durch Gravitation
-		}
-	}	
-	for (int n=0;n<1001;++n)
-	{
-		for (int x = 0; x < size_x; ++x)
-		{
-			current_posx = x;
-			for (int y = 0; y < size_y - 1; ++y)
-			{
-				current_posy = y;
-				if (is_boundary.at(current_posx).at(current_posy))
-				{
-					continue;
-				}
-				temp_nval = get_nval(1);
-				long double div = temp_nval.at(2) + temp_nval.at(1) - temp_nval.at(0) - temp_nval.at(3); // Berechnung der Divergenz
-				div *= 1.99; // overrelaxation
-				if (!is_boundary.at(current_posx).at(current_posy))
-				{ // solid und inflow-boundaries sind unveränderlich
-					frames.at(akt_frame).at(current_posx).at(current_posy).at(1) += div / nachbarn;
-					frames.at(akt_frame).at(current_posx).at(current_posy).at(2) += div / nachbarn;
-				}
-				if (!is_boundary.at(current_posx + 1).at(current_posy))
-				{
-					frames.at(akt_frame).at(current_posx + 1).at(current_posy).at(1) -= div / nachbarn;
-				}
-				if (!is_boundary.at(current_posx).at(current_posy + 1))
-				{
-					frames.at(akt_frame).at(current_posx).at(current_posy + 1).at(2) -= div / nachbarn;
-				}
-			}
-		}
-	}
-	ausgabe();
-	for (int x = 0; x < size_x; ++x)
-	{ 
-		current_posx = x;
-		for (int y = 0; y < size_y; ++y)
-		{
-			current_posy = y;
-			if (is_boundary.at(current_posx).at(current_posy))
-			{
-				continue;
-			}
-			past_posx_x = current_posx - frames.at(akt_frame).at(current_posx).at(current_posy).at(1) * (*time_stp); // vorherige Position bei dem Teilchen, welches am Ort der x-Geschwindigkeit ist
-			past_posy_x = current_posy + 0.5/*da x- und y-Geschwindigkeit versetzt gespeichert sind*/ - calc_avg(2) * (*time_stp);
-			past_posx_y = current_posx + 0.5 - calc_avg(1) * (*time_stp);
-			past_posy_y = current_posy - frames.at(akt_frame).at(current_posx).at(current_posy).at(2) * (*time_stp); // hier in y-Richtung
-			vector<long double> erg = interpolate(); // interpolierte Geschwindigkeit an der vorherigen Position
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = erg.at(0);
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = erg.at(1);
-		}
-		cout << endl;
-	}
-
-	// TODO: jetzigen div = 0 -solver durch \nabla \cdot p \cdot \Delta t / \rho ersetzen
-
+	
 }
 
 vector<long double> get_nval(int w) // IMMER TEMP AKTUALISIEREN, JE NACHDDEM, OB DRUCK ODER GESCHWINDIGKEIT // zweiter Parameter steht für Value in frames

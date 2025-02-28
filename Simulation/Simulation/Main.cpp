@@ -5,12 +5,6 @@ int main()
 	set_initial();
 	ausgabe();
 	next_frame();
-	advect();
-	next_frame();
-	advect();
-	next_frame();
-	advect();
-	ext_force();
 	//calc_pressure();
 	ausgabe();
 	/*

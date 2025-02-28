@@ -79,6 +79,8 @@ vector<vector<vector<vector<long double>>>>& operator+=(vector<vector<vector<vec
 
 vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init); // Conjugate-Gradient-Methode
 
+long double calc_Hn(int i);
+
 // Alles für Matrizenrechnung
 
 namespace Matrix
