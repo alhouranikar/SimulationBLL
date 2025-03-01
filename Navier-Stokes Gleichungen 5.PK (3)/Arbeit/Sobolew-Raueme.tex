@@ -1,0 +1,50 @@
+Zunächst soll das Lebesgue-Maß sowie das Lebesgue-Integral erklärt werden. 
+\begin{Definitionbox}[]
+    Das Lebesgue-Maß $\mu(E)$ einer Menge $E$, welche als $n$-dimensionales Hyperrechteck ($E\subset \mathbb{R}^n$) identifiziert werden kann, ist definiert als:
+    \begin{align*}
+        \mu(E)= \prod_{i=1}^{n}{(b_i - a_i)}
+    \end{align*}
+    genau dann wenn:
+    \begin{align*}
+        E=[a_1 , b_1] \times [a_2 , b_2] \times \ldots \times [a_n , b_n]
+    \end{align*}
+\end{Definitionbox}
+Das Lebesgue-Maß ordnet damit anschaulich einem $n$-dimensionalen Hyperrechteck ein Volumen zu.
+Das Lebesgue-Integral zerlegt im Gegensatz zum Riemann-Integral nicht das Integrationsintervall des Urbildraums der Funktion $f:\mathbb{R} \ni x \mapsto f(x)\in \mathbb{R}$ in Teilintervalle der Größe $\Delta x_i \to 0$, sondern das Intervall des Bildraums der Funktion $f$.
+\begin{Definitionbox}[]
+    Sei $c_i$ eine Zerlegung des Intervalls $[\min(f),\max(f)]$, sodass $\bigcup_{i\in \mathbb{N}\cup \{\infty\}}c_i = \mathscr{R}(f)$, dann ist das \emph{Lebesgue-Integral} der Funktion $f(x)$ definiert als:
+    \begin{align*}
+        \sum_{i}{c_i \mu(A_i)} = \int{f(x) \dfr{\mu}}
+    \end{align*}
+    wobei gilt $\forall i \in \mathbb{N},x\in A_i : f(x)\in c_i$.
+
+% DEFINITION PRÜFEN !!!
+
+\end{Definitionbox}
+Dabei muss jede Menge $A_i$ messbar sein. 
+Da die Bedingung der Messbarkeit auch für Funktionen mit unendlich vielen Sprungstellen erfüllt werden kann, ist das Lebesgue-Integral als Verallgemeinerung des Begriffs der Integration zu verstehen und ist deshalb für Funktionen anwendbar, welche mit dem herkömmlichen Riemann-Integral nicht integriert werden können. Dieser allgemeinere Begriff motiviert die Definition der sogenannten Lebesgue-Räume (notiert mit $\mathcal{L}^p$), welche Lebesgue-integrierbare Funktionen enthalten.
+\begin{Definitionbox}[]
+    Der Raum ($\Omega \subset \overline{\mathbb{R}}$, $p\in [1,\infty[$, $f$ ist messbar)
+    \begin{align*}
+        \mathcal{L}^p (\Omega) := \left\{f:\Omega \mapsto \mathbb{R}^{n} : \left(\int_{\Omega}{|f|^{p}\dfr{\mu}} \right)^{\frac{1}{p}}< \infty \right\}
+    \end{align*}
+    ist ein Lebesgue-Raum über der Menge $\Omega$.
+\end{Definitionbox}
+Um den Sobolew-Raum zu definieren, muss zuvor der Begriff der schwachen Ableitung definiert werden~\cite[nach][S. 13f.]{korobkov_steady_2024}.
+\begin{Definitionbox}[]
+    Sei $\varphi\in C^{\infty}_0$ eine Testfunktion, dann ist $v=D^{\alpha} u$ die \emph{$\alpha$-te schwache Ableitung} der Funktion $u$, wenn
+    \begin{align*}
+        \int_{\Omega}{uD^{\alpha}\varphi \dfr{x}}=(-1)^{|\alpha|} \int_{\Omega}{v\varphi \dfr x}
+    \end{align*}
+    für alle $g\in C^{\infty}_0$ gilt.
+\end{Definitionbox}
+Der Sobolew-Raum ist jener Raum, welcher alle Funktionen ($\in \mathcal{L}^p (\Omega)$) umfasst, deren schwache Ableitungen bestimmten Aussagen über Stetigkeit entsprechen.
+\begin{Definitionbox}[]
+    Folgender Raum ist als Sobolew-Raum definiert\footnote{Auf die Verallgemeinerung für $k\in \mathbb{R}$ soll hier nicht eingegangen werden.}:
+    \begin{align*}
+    W^{k,p}(\Omega) = \left\{ u:\Omega \mapsto \mathbb{R}, u \in \mathcal{L}^p , \forall \alpha_m \leq k \,: D^{\alpha_m}u \in \mathcal{L}^p \right\}.
+    \end{align*}
+\end{Definitionbox}
+Kann die \glqq Lösungsschablone\grqq~einer partiellen Differentialgleichung also stetig in einen Sobolew-Raum eingebettet werden, so ist die Existenz einer Lösung möglich, da es eine Funktion gibt, welche schwache Ableitungen in $\mathcal{L}^p$ hat.
+
+% PRÜFEN !!!
