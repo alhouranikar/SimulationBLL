@@ -85,7 +85,14 @@ void set_initial()
 	}
 	current_posx = 0;
 	current_posy = 0;
-
+	for (int i = 0; i < size_x; ++i)
+	{
+		for (int j = 0; j < size_y; ++j)
+		{
+			cout << is_boundary.at(i).at(j) << " ";
+		}
+		cout << endl;
+	}
 	density = 1.0; // NUR FÜR TESTZWECKE
 }
 
@@ -96,11 +103,73 @@ void create_mesh()
 
 void next_frame()
 {
+	vector<vector<vector<long double>>> koeff_x = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)));
+	vector<vector<vector<long double>>> koeff_y = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)));
 	++akt_frame;
 	frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
 	current_posx = current_posy = 0;
-	calc_pressure();
-	current_posx = current_posy = 0;
+	for (int i = 0; i < size_x; ++i)
+	{
+		for (int j = 0; j < size_y; ++j)
+		{
+			if (is_boundary.at(i).at(j))
+				continue;
+			size_t z = i * size_y + j + 1;
+			size_t zz = z - ((i - 2) * size_y + j + 1);
+			/*
+			if (z < 0)
+				z = 0; // nur, wenn auch boundary-punkte überprüft werden
+			*/
+			koeff_x.at(2).at(z).at(z) = 3 / (2*(*time_stp));
+			koeff_y.at(2).at(z).at(z) = 3 / (2 * (*time_stp));
+			// Bereich für x-Komponente:
+			// Geschwindigkeit in y-Richtung für x-Komponente
+			koeff_x.at(2).at(z).at(z - 2) = frames.at(akt_frame).at(i).at(j - 2).at(2) / (12 * dist);
+			koeff_x.at(2).at(z).at(z - 1) = -8 * frames.at(akt_frame).at(i).at(j - 1).at(2) / (12 * dist);
+			koeff_x.at(2).at(z).at(z + 1) = 8 * frames.at(akt_frame).at(i).at(j + 1).at(2) / (12 * dist);
+			koeff_x.at(2).at(z).at(z + 2) = -frames.at(akt_frame).at(i).at(j + 2).at(2) / (12 * dist);
+			// Geschwindigkeit in x-Richtung für x-Komponente und für y-Komponente
+			if (zz >= 0)
+			{
+				koeff_x.at(2).at(z).at(zz) = frames.at(akt_frame).at(i - 2).at(j).at(1) / (12 * dist);
+				koeff_y.at(2).at(z).at(zz) = frames.at(akt_frame).at(i - 2).at(j).at(1) / (12 * dist);
+			}
+			zz = z - ((i - 1) * size_y + j + 1);
+			if (zz >= 0)
+			{
+				koeff_x.at(2).at(z).at(zz) = -8 * frames.at(akt_frame).at(i - 1).at(j).at(1) / (12 * dist);
+				koeff_x.at(2).at(z).at(zz) = -8 * frames.at(akt_frame).at(i - 1).at(j).at(1) / (12 * dist);
+			}
+			zz = z - ((i + 1) * size_y + j + 1);			
+			if (zz <= size_y * size_x - 1)
+			{
+				koeff_x.at(2).at(z).at(zz) = 8 * frames.at(akt_frame).at(i + 1).at(j).at(1) / (12 * dist);
+				koeff_x.at(2).at(z).at(zz) = 8 * frames.at(akt_frame).at(i + 1).at(j).at(1) / (12 * dist);
+			}
+			zz = z - ((i + 2) * size_y + j + 1);
+			if (zz <= size_y * size_x - 1)
+			{
+				koeff_x.at(2).at(z).at(zz) = -frames.at(akt_frame).at(i + 2).at(j).at(1) / (12 * dist);
+				koeff_x.at(2).at(z).at(zz) = -frames.at(akt_frame).at(i + 2).at(j).at(1) / (12 * dist);
+			}
+			// Bereich für y-Komponente
+			// Geschwindigkeit in y-Richtung für y-Komponente
+			koeff_y.at(2).at(z).at(z - 2) = frames.at(akt_frame).at(i).at(j - 2).at(2) / (12 * dist);
+			koeff_y.at(2).at(z).at(z - 1) = -8 * frames.at(akt_frame).at(i).at(j - 1).at(2) / (12 * dist);
+			koeff_y.at(2).at(z).at(z + 1) = 8 * frames.at(akt_frame).at(i).at(j + 1).at(2) / (12 * dist);
+			koeff_y.at(2).at(z).at(z + 2) = -frames.at(akt_frame).at(i).at(j + 2).at(2) / (12 * dist);
+		}
+	}
+	cout << "Ende";
+	for (int i = 0; i < size_x * size_y; ++i)
+	{
+		for (int j = 0; j < size_y * size_y; ++j)
+		{
+			cout << koeff_x.at(2).at(i).at(j) << " ";
+		}
+		cout << endl;
+	}
+	/*
 	for (int i = 0; i < size_x; ++i)
 	{
 		current_posx = i;
