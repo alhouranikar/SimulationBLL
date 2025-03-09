@@ -101,26 +101,32 @@ void create_mesh()
 	frames = vector<vector<vector<vector<long double>>>>(frame_anz + 1, vector<vector<vector<long double>>>(size_x, vector<vector<long double>>(size_y, vector<long double>(3)))); // 3 Argumente beim long double vector, um Druck und Geschwindigkeit (in x- und y-Richtung) zu speichern (1. Eintrag Druck, 2. Eintrag Geschwindigkeit in x-Richtung, 3. Eintrag Geschwindigkeit in y-Richtung), x Zeilen und y Spalten // VERBESSERUNG: mehrere Werte speichern, um mehr Parameter zu haben; +1, damit der urpsrüngliche Frame auch gespeichert werden kann
 }
 
+
 void next_frame()
 {
 	vector<vector<vector<long double>>> koeff_x = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)));
 	vector<vector<vector<long double>>> koeff_y = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)));
+	vector<vector<vector<long double>>> pressure_x = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(1)));
+	vector<vector<vector<long double>>> pressure_y = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(1)));
 	++akt_frame;
 	frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
 	current_posx = current_posy = 0;
+
+	// ab akt_frame - 3 Einträge löschen!
+
 	for (int i = 0; i < size_x; ++i)
 	{
 		for (int j = 0; j < size_y; ++j)
 		{
 			if (is_boundary.at(i).at(j))
 				continue;
-			size_t z = i * size_y + j + 1;
-			size_t zz = z - ((i - 2) * size_y + j + 1);
+			const size_t z = i * size_y + j + 1;
+			size_t zz = z - 2 * size_y;
 			/*
 			if (z < 0)
 				z = 0; // nur, wenn auch boundary-punkte überprüft werden
 			*/
-			koeff_x.at(2).at(z).at(z) = 3 / (2*(*time_stp));
+			koeff_x.at(2).at(z).at(z) = 3 / (2 * (*time_stp));
 			koeff_y.at(2).at(z).at(z) = 3 / (2 * (*time_stp));
 			// Bereich für x-Komponente:
 			// Geschwindigkeit in y-Richtung für x-Komponente
@@ -134,19 +140,19 @@ void next_frame()
 				koeff_x.at(2).at(z).at(zz) = frames.at(akt_frame).at(i - 2).at(j).at(1) / (12 * dist);
 				koeff_y.at(2).at(z).at(zz) = frames.at(akt_frame).at(i - 2).at(j).at(1) / (12 * dist);
 			}
-			zz = z - ((i - 1) * size_y + j + 1);
+			zz = z - size_y;
 			if (zz >= 0)
 			{
 				koeff_x.at(2).at(z).at(zz) = -8 * frames.at(akt_frame).at(i - 1).at(j).at(1) / (12 * dist);
 				koeff_x.at(2).at(z).at(zz) = -8 * frames.at(akt_frame).at(i - 1).at(j).at(1) / (12 * dist);
 			}
-			zz = z - ((i + 1) * size_y + j + 1);			
+			zz = z + size_y;
 			if (zz <= size_y * size_x - 1)
 			{
 				koeff_x.at(2).at(z).at(zz) = 8 * frames.at(akt_frame).at(i + 1).at(j).at(1) / (12 * dist);
 				koeff_x.at(2).at(z).at(zz) = 8 * frames.at(akt_frame).at(i + 1).at(j).at(1) / (12 * dist);
 			}
-			zz = z - ((i + 2) * size_y + j + 1);
+			zz = z + 2 * size_y;
 			if (zz <= size_y * size_x - 1)
 			{
 				koeff_x.at(2).at(z).at(zz) = -frames.at(akt_frame).at(i + 2).at(j).at(1) / (12 * dist);
@@ -158,17 +164,24 @@ void next_frame()
 			koeff_y.at(2).at(z).at(z - 1) = -8 * frames.at(akt_frame).at(i).at(j - 1).at(2) / (12 * dist);
 			koeff_y.at(2).at(z).at(z + 1) = 8 * frames.at(akt_frame).at(i).at(j + 1).at(2) / (12 * dist);
 			koeff_y.at(2).at(z).at(z + 2) = -frames.at(akt_frame).at(i).at(j + 2).at(2) / (12 * dist);
+			// Druckgradienten in x/y-Richtung berechnen:
+			pressure_x.at(akt_frame).at(z).at(0) = (frames.at(akt_frame).at(i - 2).at(j).at(0) - 8 * frames.at(akt_frame).at(i - 1).at(j).at(0) + 8 * frames.at(akt_frame).at(i + 1).at(j).at(0) - frames.at(akt_frame).at(i + 2).at(j).at(0)) / (12 * dist);
+			pressure_y.at(akt_frame).at(z).at(0) = (frames.at(akt_frame).at(i).at(j - 2).at(0) - 8 * frames.at(akt_frame).at(i).at(j - 1).at(0) + 8 * frames.at(akt_frame).at(i).at(j + 1).at(0) - frames.at(akt_frame).at(i).at(j + 2).at(0)) / (12 * dist);
 		}
 	}
-	cout << "Ende";
-	for (int i = 0; i < size_x * size_y; ++i)
+	vector<vector<long double>>& temp_pr = pressure_x.at(3);
+	vector<long double&> temp_guess = vector<long double&>(size_x * size_y);
+	int h = 0; // damit ein eindeutiger Index für jeden temp_guess vorliegt
+	for (int x = 0; x < size_x;++x)
 	{
-		for (int j = 0; j < size_y * size_y; ++j)
+		for (int y = 0;y < size_y;++y)
 		{
-			cout << koeff_x.at(2).at(i).at(j) << " ";
+			temp_guess.at(h) = frames.at(akt_frame).at(x).at(y).at(1);
+			++h;
 		}
-		cout << endl;
 	}
+	//cgm(koeff_x.at(akt_frame), temp_pr, temp_guess)
+	
 	/*
 	for (int i = 0; i < size_x; ++i)
 	{
