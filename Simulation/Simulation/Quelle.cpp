@@ -10,7 +10,7 @@ unique_ptr<const double> ende;
 unique_ptr<double> time_stp;
 double glb_time;
 unsigned int frame_anz; // Anzahl der Frames
-unsigned int akt_frame; // aktueller Frame
+int akt_frame; // aktueller Frame
 size_t size_x;
 size_t size_y;
 int current_posx;
@@ -101,87 +101,211 @@ void create_mesh()
 	frames = vector<vector<vector<vector<long double>>>>(frame_anz + 1, vector<vector<vector<long double>>>(size_x, vector<vector<long double>>(size_y, vector<long double>(3)))); // 3 Argumente beim long double vector, um Druck und Geschwindigkeit (in x- und y-Richtung) zu speichern (1. Eintrag Druck, 2. Eintrag Geschwindigkeit in x-Richtung, 3. Eintrag Geschwindigkeit in y-Richtung), x Zeilen und y Spalten // VERBESSERUNG: mehrere Werte speichern, um mehr Parameter zu haben; +1, damit der urpsrüngliche Frame auch gespeichert werden kann
 }
 
-
 void next_frame()
 {
-	vector<vector<vector<long double>>> koeff_x = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)));
-	vector<vector<vector<long double>>> koeff_y = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)));
+	vector<vector<long double>> koeff_x = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y));
+	vector<vector<long double>> koeff_y = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y));
+	vector<vector<vector<long double>>> vel_x = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x, vector<long double>(size_y)));
+	vector<vector<vector<long double>>> vel_y = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x, vector<long double>(size_y)));
 	vector<vector<vector<long double>>> pressure_x = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(1)));
 	vector<vector<vector<long double>>> pressure_y = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x * size_y, vector<long double>(1)));
+	vector<vector<vector<long double>>> pressure = vector<vector<vector<long double>>>(3, vector<vector<long double>>(size_x, vector<long double>(size_y)));
+	vector<vector<long double>> grav = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
+	vector<vector<long double>> geschw_rest_x = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
+	vector<vector<long double>> geschw_rest_y = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
 	++akt_frame;
-	frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
 	current_posx = current_posy = 0;
 
 	// ab akt_frame - 3 Einträge löschen!
+	for (int n = 0; n < 101; ++n)
+	{
+		if (n == 0)
+		{
+			frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
+			for (int g = 0; g < size_x; ++g)
+			{
+				for (int h = 0; h < size_y; ++h)
+				{ // die anfängliche Abschätzung der Geschwindigkeit ist durch die Geschwindigkeit zum vorherigen Frame gegeben // VERBESSERUNG: erste Abschätzung ist vorheriger Zeitpunkt mit zusätzlicher Diskretisierung
+					vel_x.at(2).at(g).at(h) = frames.at(akt_frame - 1).at(g).at(h).at(1);
+					vel_y.at(2).at(g).at(h) = frames.at(akt_frame - 1).at(g).at(h).at(2);
+				}
+			}
+		}
+		pressure_x.at(1) = pressure_x.at(2);
+		pressure_x.at(0) = pressure_x.at(1);
+		pressure_y.at(1) = pressure_y.at(2);
+		pressure_y.at(0) = pressure_y.at(1);
+		vel_x.at(1) = vel_x.at(2);
+		vel_x.at(0) = vel_x.at(1);
+		vel_y.at(1) = vel_y.at(2);
+		vel_y.at(0) = vel_y.at(1);
+		for (int i = 0; i < size_x; ++i)
+		{
+			for (int j = 0; j < size_y; ++j)
+			{
+				if (is_boundary.at(i).at(j))
+					continue;
+				const size_t z = i * size_y + j;
+				size_t zz = z - 2 * size_y;
+				/*
+				if (z < 0)
+					z = 0; // nur, wenn auch boundary-punkte überprüft werden
+				*/
+				koeff_x.at(z).at(z) = 3 / (2 * (*time_stp));
+				koeff_y.at(z).at(z) = 3 / (2 * (*time_stp));
+				// Bereich für x-Komponente:
+				// Geschwindigkeit in y-Richtung für x-Komponente
+				koeff_x.at(z).at(z - 2) = vel_y.at(1).at(i).at(j - 2) / (12 * dist);
+				koeff_x.at(z).at(z - 1) = vel_y.at(1).at(i).at(j-1) / (12 * dist);
+				koeff_x.at(z).at(z + 1) = 8 * vel_y.at(1).at(i).at(j + 1) / (12 * dist);
+				koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(i).at(j + 2) / (12 * dist);
+				// Geschwindigkeit in x-Richtung für x-Komponente und für y-Komponente
+				if (zz >= 0)
+				{
+					koeff_x.at(z).at(zz) = vel_x.at(1).at(i - 2).at(j) / (12 * dist);
+					koeff_y.at(z).at(zz) = vel_x.at(1).at(i - 2).at(j) / (12 * dist);
+				}
+				zz = z - size_y;
+				if (zz >= 0)
+				{
+					koeff_x.at(z).at(zz) = -8 * vel_x.at(1).at(i - 1).at(j) / (12 * dist);
+					koeff_y.at(z).at(zz) = -8 * vel_x.at(1).at(i - 1).at(j) / (12 * dist);
+				}
+				zz = z + size_y;
+				if (zz <= size_y * size_x - 1)
+				{
+					koeff_x.at(z).at(zz) = 8 * vel_x.at(1).at(i + 1).at(j) / (12 * dist);
+					koeff_y.at(z).at(zz) = 8 * vel_x.at(1).at(i + 1).at(j) / (12 * dist);
+				}
+				zz = z + 2 * size_y;
+				if (zz <= size_y * size_x - 1)
+				{
+					koeff_x.at(z).at(zz) = -vel_x.at(1).at(i + 2).at(j) / (12 * dist);
+					koeff_y.at(z).at(zz) = -vel_x.at(1).at(i + 2).at(j) / (12 * dist);
+				}
+				// Bereich für y-Komponente
+				// Geschwindigkeit in y-Richtung für y-Komponente
+				koeff_y.at(z).at(z - 2) = frames.at(akt_frame).at(i).at(j - 2).at(2) / (12 * dist);
+				koeff_y.at(z).at(z - 1) = -8 * frames.at(akt_frame).at(i).at(j - 1).at(2) / (12 * dist);
+				koeff_y.at(z).at(z + 1) = 8 * frames.at(akt_frame).at(i).at(j + 1).at(2) / (12 * dist);
+				koeff_y.at(z).at(z + 2) = -frames.at(akt_frame).at(i).at(j + 2).at(2) / (12 * dist);
+				// Druckgradienten in x/y-Richtung berechnen:
+				pressure_x.at(2).at(z).at(0) = (frames.at(akt_frame).at(i - 2).at(j).at(0) - 8 * frames.at(akt_frame).at(i - 1).at(j).at(0) + 8 * frames.at(akt_frame).at(i + 1).at(j).at(0) - frames.at(akt_frame).at(i + 2).at(j).at(0)) / (12 * dist);
+				pressure_y.at(2).at(z).at(0) = (frames.at(akt_frame).at(i).at(j - 2).at(0) - 8 * frames.at(akt_frame).at(i).at(j - 1).at(0) + 8 * frames.at(akt_frame).at(i).at(j + 1).at(0) - frames.at(akt_frame).at(i).at(j + 2).at(0)) / (12 * dist);
+				// Gravitationskraft und andere externe Kräfte werden hier gespeichert
+				grav.at(z).at(0) = density * 9.81;
+				// zeitliche Entwicklung der Geschwindigkeit
+ 				if (akt_frame - 1 < 0)
+				{
+					geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame).at(i).at(j).at(1);
+					geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame).at(i).at(j).at(2);
+				}
+				else if(akt_frame - 2 < 0)
+				{ // Buffer-overflow, da akt_frame eine positive Zahl sein muss (behoben)
+					geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1);
+					geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2);
+				}
+				else
+				{
+					geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 2).at(i).at(j).at(1);
+					geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 2).at(i).at(j).at(2);
+				}
+			}
+		}
 
-	for (int i = 0; i < size_x; ++i)
-	{
-		for (int j = 0; j < size_y; ++j)
+		vector<vector<long double>> temp_pr = grav + (-1) * pressure_x.at(2) + (-1) * geschw_rest_x; // Gravitation als externe Kraft nur in x-Richtung hinzufügen
+		vector<vector<long double>> temp_guess = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
+
+		//Geschwindigkeit in x-Richtung berechnen
+		for (int i = 0; i < size_x; ++i)
 		{
-			if (is_boundary.at(i).at(j))
-				continue;
-			const size_t z = i * size_y + j + 1;
-			size_t zz = z - 2 * size_y;
-			/*
-			if (z < 0)
-				z = 0; // nur, wenn auch boundary-punkte überprüft werden
-			*/
-			koeff_x.at(2).at(z).at(z) = 3 / (2 * (*time_stp));
-			koeff_y.at(2).at(z).at(z) = 3 / (2 * (*time_stp));
-			// Bereich für x-Komponente:
-			// Geschwindigkeit in y-Richtung für x-Komponente
-			koeff_x.at(2).at(z).at(z - 2) = frames.at(akt_frame).at(i).at(j - 2).at(2) / (12 * dist);
-			koeff_x.at(2).at(z).at(z - 1) = -8 * frames.at(akt_frame).at(i).at(j - 1).at(2) / (12 * dist);
-			koeff_x.at(2).at(z).at(z + 1) = 8 * frames.at(akt_frame).at(i).at(j + 1).at(2) / (12 * dist);
-			koeff_x.at(2).at(z).at(z + 2) = -frames.at(akt_frame).at(i).at(j + 2).at(2) / (12 * dist);
-			// Geschwindigkeit in x-Richtung für x-Komponente und für y-Komponente
-			if (zz >= 0)
-			{
-				koeff_x.at(2).at(z).at(zz) = frames.at(akt_frame).at(i - 2).at(j).at(1) / (12 * dist);
-				koeff_y.at(2).at(z).at(zz) = frames.at(akt_frame).at(i - 2).at(j).at(1) / (12 * dist);
+			for (int j = 0; j < size_y; ++j)
+			{ // die erste Abschätzung für conjuage-gradient ist die Geschwindigkeit zur vorherigen Iteration
+				const size_t z = i * size_y + j;
+				temp_guess.at(z).at(0) = vel_x.at(1).at(i).at(j);
 			}
-			zz = z - size_y;
-			if (zz >= 0)
-			{
-				koeff_x.at(2).at(z).at(zz) = -8 * frames.at(akt_frame).at(i - 1).at(j).at(1) / (12 * dist);
-				koeff_x.at(2).at(z).at(zz) = -8 * frames.at(akt_frame).at(i - 1).at(j).at(1) / (12 * dist);
-			}
-			zz = z + size_y;
-			if (zz <= size_y * size_x - 1)
-			{
-				koeff_x.at(2).at(z).at(zz) = 8 * frames.at(akt_frame).at(i + 1).at(j).at(1) / (12 * dist);
-				koeff_x.at(2).at(z).at(zz) = 8 * frames.at(akt_frame).at(i + 1).at(j).at(1) / (12 * dist);
-			}
-			zz = z + 2 * size_y;
-			if (zz <= size_y * size_x - 1)
-			{
-				koeff_x.at(2).at(z).at(zz) = -frames.at(akt_frame).at(i + 2).at(j).at(1) / (12 * dist);
-				koeff_x.at(2).at(z).at(zz) = -frames.at(akt_frame).at(i + 2).at(j).at(1) / (12 * dist);
-			}
-			// Bereich für y-Komponente
-			// Geschwindigkeit in y-Richtung für y-Komponente
-			koeff_y.at(2).at(z).at(z - 2) = frames.at(akt_frame).at(i).at(j - 2).at(2) / (12 * dist);
-			koeff_y.at(2).at(z).at(z - 1) = -8 * frames.at(akt_frame).at(i).at(j - 1).at(2) / (12 * dist);
-			koeff_y.at(2).at(z).at(z + 1) = 8 * frames.at(akt_frame).at(i).at(j + 1).at(2) / (12 * dist);
-			koeff_y.at(2).at(z).at(z + 2) = -frames.at(akt_frame).at(i).at(j + 2).at(2) / (12 * dist);
-			// Druckgradienten in x/y-Richtung berechnen:
-			pressure_x.at(akt_frame).at(z).at(0) = (frames.at(akt_frame).at(i - 2).at(j).at(0) - 8 * frames.at(akt_frame).at(i - 1).at(j).at(0) + 8 * frames.at(akt_frame).at(i + 1).at(j).at(0) - frames.at(akt_frame).at(i + 2).at(j).at(0)) / (12 * dist);
-			pressure_y.at(akt_frame).at(z).at(0) = (frames.at(akt_frame).at(i).at(j - 2).at(0) - 8 * frames.at(akt_frame).at(i).at(j - 1).at(0) + 8 * frames.at(akt_frame).at(i).at(j + 1).at(0) - frames.at(akt_frame).at(i).at(j + 2).at(0)) / (12 * dist);
 		}
-	}
-	vector<vector<long double>>& temp_pr = pressure_x.at(3);
-	vector<long double&> temp_guess = vector<long double&>(size_x * size_y);
-	int h = 0; // damit ein eindeutiger Index für jeden temp_guess vorliegt
-	for (int x = 0; x < size_x;++x)
-	{
-		for (int y = 0;y < size_y;++y)
+		vector<vector<long double>> erg1 = Matrix::cgm(koeff_x, temp_pr, temp_guess);
+		for (int i = 0; i < size_x; ++i)
 		{
-			temp_guess.at(h) = frames.at(akt_frame).at(x).at(y).at(1);
-			++h;
+			for (int j = 0; j < size_y; ++j)
+			{
+				const size_t z = i * size_y + j;
+				vel_x.at(2).at(i).at(j) = erg1.at(z).at(0);
+			}
 		}
+
+		temp_pr = (-1) * pressure_y.at(2) + (-1) * geschw_rest_x;
+		temp_guess = vector<vector<long double>>(size_x*size_y, vector<long double>(1));
+
+		//Geschwindigkeit in y-Richtung berechnen
+		for (int i = 0; i < size_x; ++i)
+		{
+			for (int j = 0; j < size_y; ++j)
+			{
+				const size_t z = i * size_y + j;
+				temp_guess.at(z).at(0) = vel_y.at(1).at(i).at(j);
+			}
+		}
+		vector<vector<long double>> erg2 = Matrix::cgm(koeff_y, temp_pr, temp_guess);
+		for (int i = 0; i < size_x; ++i)
+		{
+			for (int j = 0; j < size_y; ++j)
+			{
+				const size_t z = i * size_y + j;
+				vel_y.at(2).at(i).at(j) = erg2.at(z).at(0);
+			}
+		}
+
+		// Berechnung des Drucks mithilfe einer Poisson-Gleichung für den Druck und der soeben errrechneten Geschwindigkeit
+		for (int i = 0; i < size_x; ++i)
+		{
+			current_posx = i;
+			for (int j = 0; j < size_y; ++j)
+			{
+				current_posy = j;
+				if (is_boundary.at(i).at(j))
+					continue;
+				long double temp_u_x = (-vel_x.at(2).at(current_posx + 2).at(current_posy) + 16 * vel_x.at(2).at(current_posx + 1).at(current_posy) - 30 * vel_x.at(2).at(current_posx).at(current_posy) + 16 * vel_x.at(2).at(current_posx - 1).at(current_posy) - vel_x.at(2).at(current_posx - 2).at(current_posy)) / (12 * dist * dist);
+				long double temp_v_y = (-vel_y.at(2).at(current_posx).at(current_posy + 2) + 16 * vel_y.at(2).at(current_posx).at(current_posy + 1) - 30 * vel_y.at(2).at(current_posx).at(current_posy) + 16 * vel_y.at(2).at(current_posx).at(current_posy - 1) - vel_y.at(2).at(current_posx).at(current_posy - 2)) / (12 * dist * dist); // NUR FÜR DELTA X = DELTA Y
+				long double temp_uv_xy = (vel_x.at(2).at(current_posx - 2).at(current_posy - 2) * vel_y.at(2).at(current_posx - 2).at(current_posy - 2) - 8 * vel_x.at(2).at(current_posx - 1).at(current_posy - 2) * vel_y.at(2).at(current_posx - 1).at(current_posy - 2) + 8 * vel_x.at(2).at(current_posx + 1).at(current_posy - 2) * vel_y.at(2).at(current_posx + 1).at(current_posy - 2) - vel_x.at(2).at(current_posx + 2).at(current_posy - 2) * vel_y.at(2).at(current_posx + 2).at(current_posy - 2) - 8 * (vel_x.at(2).at(current_posx - 2).at(current_posy - 1) * vel_y.at(2).at(current_posx - 2).at(current_posy - 1) - 8 * vel_x.at(2).at(current_posx - 1).at(current_posy - 1) * vel_y.at(2).at(current_posx - 1).at(current_posy - 1) + 8 * vel_x.at(2).at(current_posx + 1).at(current_posy - 1) * vel_y.at(2).at(current_posx + 1).at(current_posy - 1) - vel_x.at(2).at(current_posx + 2).at(current_posy - 1) * vel_y.at(2).at(current_posx + 2).at(current_posy - 1)) + 8 * (vel_x.at(2).at(current_posx - 2).at(current_posy + 1) * vel_y.at(2).at(current_posx - 2).at(current_posy + 1) - 8 * vel_x.at(2).at(current_posx - 1).at(current_posy + 1) * vel_y.at(2).at(current_posx - 1).at(current_posy + 1) + 8 * vel_x.at(2).at(current_posx + 1).at(current_posy + 1) * vel_y.at(2).at(current_posx + 1).at(current_posy + 1) - vel_x.at(2).at(current_posx + 2).at(current_posy + 1) * vel_y.at(2).at(current_posx + 2).at(current_posy + 1)) - (vel_x.at(2).at(current_posx - 2).at(current_posy + 2) * vel_y.at(2).at(current_posx - 2).at(current_posy + 2) - 8 * vel_x.at(2).at(current_posx - 1).at(current_posy + 2) * vel_y.at(2).at(current_posx - 1).at(current_posy + 2) + 8 * vel_x.at(2).at(current_posx + 1).at(current_posy + 2) * vel_y.at(2).at(current_posx + 1).at(current_posy + 2) - vel_x.at(2).at(current_posx + 2).at(current_posy + 2) * vel_y.at(2).at(current_posx + 2).at(current_posy + 2))) / (12 * dist * dist); // AUFPASSEN MIT UNTERSCHIEDLICHEN MESH-GRÖßEN, DA DELTA X AN VERSCHEIDENEN ORTEN DANN ANDERS SEIN KANN
+				pressure.at(2).at(current_posx).at(current_posy) = ((12 * dist * dist) * (-density * (temp_u_x + 2 * temp_uv_xy + temp_v_y)) + pressure.at(1).at(current_posx + 2).at(current_posy) - 16 * pressure.at(1).at(current_posx + 1).at(current_posy) - 16 * pressure.at(1).at(current_posx - 1).at(current_posy) + pressure.at(1).at(current_posx - 2).at(current_posy) + pressure.at(1).at(current_posx).at(current_posy + 2) - 16 * pressure.at(1).at(current_posx).at(current_posy + 1) - 16 * pressure.at(1).at(current_posx).at(current_posy - 1) + pressure.at(1).at(current_posx).at(current_posy - 2)) / (-60);
+			}
+		}
+
+		// Berechnung der Geschwindigkeit mithilfe des korrigierten Drucks
+		vector<vector<long double>> Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // nicht diagonaler Teil der Koeffizientenmatrix Z_x
+		vector<vector<long double>> Z_dx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // invertierter diagonaler Teil der Koeffizientenmatrix Z_x
+		vector<vector<long double>> Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // nicht diagonaler Teil der Koeffizientenmatrix Z_y
+		vector<vector<long double>> Z_dy = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // invertierter diagonaler Teil der Koeffizientenmatrix Z_y
+		for (int x = 0; x < size_x*size_y; ++x)
+		{
+			for (int y = 0; y < size_x*size_y; ++y)
+			{
+				if (x == y)
+				{
+					Z_dx.at(x).at(y) = 1 / koeff_x.at(x).at(y);
+					Z_dy.at(x).at(y) = 1 / koeff_y.at(x).at(y);
+					continue;
+				}
+				Z_nx.at(x).at(y) = koeff_x.at(x).at(y);
+				Z_ny.at(x).at(y) = koeff_y.at(x).at(y);
+			}
+		}
+		vector<vector<long double>> Dx = Z_nx + (-1) * grav + geschw_rest_x;
+		vector<vector<long double>> Dy = Z_nx + geschw_rest_y;
+
+		// HIER WEITER : IMPLEMENTIERUNG VON GLEICHUNG 4.8
+
 	}
-	//cgm(koeff_x.at(akt_frame), temp_pr, temp_guess)
-	
+	for (auto elem : koeff_x)
+	{
+		for (auto elem2 : elem)
+		{
+			cout << elem2 << " ";
+		}
+		cout << endl;
+	}
 	/*
 	for (int i = 0; i < size_x; ++i)
 	{
@@ -738,6 +862,37 @@ vector<vector<vector<vector<long double>>>>& operator+=(vector<vector<vector<vec
 	return vec1;
 }
 
+vector<vector<long double>> operator+(const vector<vector<long double>>& summand1, const vector<vector<long double>>& summand2)
+{
+	if ((summand1.size() != summand2.size()) || (summand1.at(0).size() != summand2.at(0).size()))
+	{
+		cerr << "Die Vektoren haben nicht die gleiche Größe!";
+		return {};
+	}
+	vector<vector<long double>> erg1 = vector<vector<long double>>(summand1.size(), vector<long double>(summand2.at(0).size()));
+	for (int i = 0; i < summand1.size(); ++i)
+	{
+		for (int j = 0; j < summand1.at(0).size(); ++j)
+		{
+			erg1.at(i).at(j) = summand1.at(i).at(j) + summand2.at(i).at(j);
+		}
+	}
+	return erg1;
+}
+
+vector<vector<long double>> operator*(const long double scalar, const vector<vector<long double>>& vec)
+{ // skalare Multiplikation
+	vector<vector<long double>> erg_scal_mul = vector<vector<long double>>(vec.size(), vector<long double>(vec.at(0).size()));
+	for (int i = 0; i < vec.size(); ++i)
+	{
+		for (int j = 0; j < vec.at(0).size(); ++j)
+		{
+			erg_scal_mul.at(i).at(j) = vec.at(i).at(j) * scalar;
+		}
+	}
+	return erg_scal_mul;
+}
+
 // Matrix-Rechnung und CGM-Methode
 vector<vector<long double>> Matrix::direction;
 vector<vector<long double>> Matrix::erg_scal_mul;
@@ -783,12 +938,12 @@ vector<vector<T>> Matrix::transpose(const vector<vector<T>>& vec)
 
 vector<vector<long double>> Matrix::operator-(const vector<vector<long double>>& minuend, const vector<vector<long double>>& subtrahend)
 {
-	vector<vector<long double>> erg1 = vector<vector<long double>>(minuend.size(), vector<long double>(minuend.at(0).size()));
 	if ((minuend.size() != subtrahend.size()) || (minuend.at(0).size() != subtrahend.at(0).size()))
 	{
 		cerr << "Die Vektoren haben nicht die gleiche Größe!";
 		return {};
 	}
+	vector<vector<long double>> erg1 = vector<vector<long double>>(minuend.size(), vector<long double>(minuend.at(0).size()));
 	for (int i = 0; i < minuend.size(); ++i)
 	{
 		for (int j = 0; j < minuend.at(0).size(); ++j)

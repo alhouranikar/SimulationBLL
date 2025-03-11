@@ -24,7 +24,7 @@ extern unique_ptr<const double> ende;
 extern unique_ptr<double> time_stp;
 extern double glb_time;
 extern unsigned int frame_anz;
-extern unsigned int akt_frame;
+extern int akt_frame;
 
 // Alle Variablen, die mit dem Mesh zusammenhängen
 // Vectoren, die das Mesh wiedergeben, werden in create_mesh erstellt, damit die gewünschte Größe beim initialisieren angeben werden kann
@@ -43,6 +43,8 @@ extern double past_posx_y; // vroherige x-Position der Geschwindigkeit in y-Rich
 extern double past_posy_y;
 extern long double umax;
 extern long double density;
+
+extern vector<vector<long double>> erg_scal_mul; // Ergebnis der skalaren Multiplikation
 
 
 void import_obj(); // Verantwortlich dafür, verschiedene Geometries zu importieren
@@ -77,7 +79,11 @@ void ext_force(); // Einbezug externer Kräfte
 
 vector<vector<vector<vector<long double>>>>& operator+=(vector<vector<vector<vector<long double>>>>& vec1, vector<vector<long double>>& vec2); // Operatorüberladung, um Divergenz zum Wert zu addieren (NUR FÜR DRUCK, DA IMMER DER INDEX 0 ANGENOMMEN WIRD
 
-vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init); // Conjugate-Gradient-Methode
+vector<vector<long double>> operator*(const long double scalar, const vector<vector<long double>>& vec);
+
+vector<vector<long double>> operator+(const vector<vector<long double>>& summand1, const vector<vector<long double>>& summand2);
+
+//vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init); // Conjugate-Gradient-Methode
 
 long double calc_Hn(int i);
 
