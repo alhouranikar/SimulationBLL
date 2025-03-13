@@ -83,6 +83,8 @@ vector<vector<long double>> operator*(const long double scalar, const vector<vec
 
 vector<vector<long double>> operator+(const vector<vector<long double>>& summand1, const vector<vector<long double>>& summand2);
 
+vector<vector<long double>> operator*(const vector<vector<long double>>& faktor1, vector<vector<long double>>& faktor2);
+
 //vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init); // Conjugate-Gradient-Methode
 
 long double calc_Hn(int i);
