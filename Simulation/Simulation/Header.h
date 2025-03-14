@@ -46,6 +46,26 @@ extern long double density;
 
 extern vector<vector<long double>> erg_scal_mul; // Ergebnis der skalaren Multiplikation
 
+extern vector<vector<long double>> koeff_x;
+extern vector<vector<long double>> koeff_y;
+extern vector<vector<vector<long double>>> vel_y;
+extern vector<vector<vector<long double>>> pressure_x;
+extern vector<vector<vector<long double>>> pressure_y;
+extern vector<vector<vector<long double>>> pressure;
+extern vector<vector<long double>> grav;
+extern vector<vector<long double>> geschw_rest_x; // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
+extern vector<vector<long double>> geschw_rest_y; // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
+extern vector<vector<long double>> temp_pr;
+extern vector<vector<long double>> temp_guess;
+extern vector<vector<long double>> Z_nx; // nicht diagonaler Teil der Koeffizientenmatrix Z_x
+extern vector<vector<long double>> Z_dx; // invertierter diagonaler Teil der Koeffizientenmatrix Z_x
+extern vector<vector<long double>> Z_ny; // nicht diagonaler Teil der Koeffizientenmatrix Z_y
+extern vector<vector<long double>> Z_dy; // invertierter diagonaler Teil der Koeffizientenmatrix Z_y
+extern vector<vector<long double>> Px;
+extern vector<vector<long double>> Py;
+extern vector<vector<long double>> Ux;
+extern vector<vector<long double>> Uy;
+
 
 void import_obj(); // Verantwortlich dafür, verschiedene Geometries zu importieren
 
@@ -84,6 +104,8 @@ vector<vector<long double>> operator*(const long double scalar, const vector<vec
 vector<vector<long double>> operator+(const vector<vector<long double>>& summand1, const vector<vector<long double>>& summand2);
 
 vector<vector<long double>> operator*(const vector<vector<long double>>& faktor1, vector<vector<long double>>& faktor2);
+
+vector<vector<long double>> operator/(const long double dividend, vector<vector<long double>>& divisor);
 
 //vector<vector<long double>> cgm(vector<vector<long double>>& koeff, vector<vector<long double>>& b1, vector<vector<long double>>& init); // Conjugate-Gradient-Methode
 

@@ -4,6 +4,7 @@ int main()
 {
 	set_initial();
 	next_frame();
+	ausgabe();
 	//calc_pressure();
 	/*
 	set_initial();

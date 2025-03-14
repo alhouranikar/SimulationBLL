@@ -132,9 +132,9 @@ void create_mesh()
 	geschw_rest_x = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
 	geschw_rest_y = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
 	temp_guess = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
-	Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // nicht diagonaler Teil der Koeffizientenmatrix Z_x
+	Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // nicht diagonaler Teil der Koeffizientenmatrix Z_x
 	Z_dx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // invertierter diagonaler Teil der Koeffizientenmatrix Z_x
-	Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // nicht diagonaler Teil der Koeffizientenmatrix Z_y
+	Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // nicht diagonaler Teil der Koeffizientenmatrix Z_y
 	Z_dy = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // invertierter diagonaler Teil der Koeffizientenmatrix Z_y
 	Px = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 	Py = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
@@ -148,7 +148,7 @@ void next_frame()
 	current_posx = current_posy = 0;
 
 	// ab akt_frame - 3 Einträge löschen!
-	for (int n = 0; n < 101; ++n)
+	for (int n = 0; n < 2; ++n)
 	{
 		if (n == 0)
 		{
@@ -276,16 +276,30 @@ void next_frame()
 			{
 				if (x == y)
 				{
-					Z_dx.at(x).at(y) = 1 / koeff_x.at(x).at(y);
-					Z_dy.at(x).at(y) = 1 / koeff_y.at(x).at(y);
+					if (koeff_x.at(x).at(y) == 0)
+						Z_dx.at(x).at(y) = 1;
+					else
+						Z_dx.at(x).at(y) = 1 / koeff_x.at(x).at(y);
+					if (koeff_y.at(x).at(y) == 0)
+						Z_dy.at(x).at(y) = 1;
+					else
+						Z_dy.at(x).at(y) = 1 / koeff_y.at(x).at(y);
 					continue;
 				}
 			}
 		}
-		Z_nx = koeff_x * vel_x.at(2);
-		Z_ny = koeff_y * vel_y.at(2);
+		Z_nx = (koeff_x + ((-1) / Z_dx)) * vel_x.at(2);
+		Z_ny = (koeff_y + ((-1) / Z_dy)) * vel_y.at(2);
 		Px = (-1) * grav + geschw_rest_x;
 		Py = geschw_rest_y;
+		for (int i = 0; i < 100; ++i)
+		{
+			//for (int j = 0; j < 100; ++j)
+			{
+				cout << (koeff_x + ((-1) / Z_dx)).at(i).at(i) << " ";
+			}
+			//cout << endl;
+		}
 		for (int i = 0; i < size_x; ++i)
 		{
 			for (int j = 0; j < size_y; ++j)
@@ -302,7 +316,6 @@ void next_frame()
 		vel_x.at(2) = Ux;
 		vel_y.at(2) = Uy;
 		// HIER WEITER : IMPLEMENTIERUNG VON GLEICHUNG 4.8
-
 	}
 	for (int i = 0; i < size_x; ++i)
 	{
@@ -422,13 +435,6 @@ void check_umax(vector<long double>& speed /* Frames - Vektor zur Zeit t eingebe
 	}
 	return;
 }
-
-/*void call_frame(unsigned int posx, unsigned int posy)
-{
-	calc_pressure();
-	calc_vel();
-}
-*/
 
 void calc_pressure()
 {
@@ -907,6 +913,7 @@ vector<vector<long double>> operator*(const vector<vector<long double>>& faktor1
 	if (faktor1.at(0).size() != faktor2.size())
 	{
 		cerr << "Die beiden Matrizen haben nicht die selbe Größe!" << endl;
+		terminate();
 	}
 	vector<vector<long double>> erg = vector<vector<long double>>(faktor1.size(), vector<long double>(faktor2.at(0).size()));
 	for (int i = 0; i < faktor1.size(); ++i)
@@ -914,6 +921,22 @@ vector<vector<long double>> operator*(const vector<vector<long double>>& faktor1
 		for (int j = 0; j < faktor2.at(0).size(); ++j)
 		{
 			erg.at(i).at(j) = faktor1.at(i).at(j) * faktor2.at(i).at(j);
+		}
+	}
+	return erg;
+}
+
+vector<vector<long double>> operator/(const long double dividend, vector<vector<long double>>& divisor)
+{
+	vector<vector<long double>> erg = vector<vector<long double>>(divisor.size(), vector<long double>(divisor.at(0).size()));
+	for (int i = 0; i < divisor.size(); ++i)
+	{
+		for (int j = 0; j < divisor.at(0).size(); ++j)
+		{
+			if (divisor.at(i).at(j) == 0)
+				erg.at(i).at(j) = 0; // alle Einträge, welche außerhalb der Hauptdiagonalen liegen
+			else
+				erg.at(i).at(j) = dividend / divisor.at(i).at(j);
 		}
 	}
 	return erg;
