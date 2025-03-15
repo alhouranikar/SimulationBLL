@@ -106,15 +106,7 @@ void set_initial()
 	}
 	current_posx = 0;
 	current_posy = 0;
-	for (int i = 0; i < size_x; ++i)
-	{
-		for (int j = 0; j < size_y; ++j)
-		{
-			cout << is_boundary.at(i).at(j) << " ";
-		}
-		cout << endl;
-	}
-	density = 1.0; // NUR FÜR TESTZWECKE
+	density = 1.0; // NUR  FÜR TESTZWECKE
 }
 
 void create_mesh()
@@ -132,9 +124,9 @@ void create_mesh()
 	geschw_rest_x = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
 	geschw_rest_y = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // der Rest der Geschwindigkeit, welcher übrig bleibt bei der zeitlichen Diskretisierung der Geschwindigkeit
 	temp_guess = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
-	Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // nicht diagonaler Teil der Koeffizientenmatrix Z_x
+	Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // nicht diagonaler Teil der Koeffizientenmatrix Z_x
 	Z_dx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // invertierter diagonaler Teil der Koeffizientenmatrix Z_x
-	Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(1)); // nicht diagonaler Teil der Koeffizientenmatrix Z_y
+	Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // nicht diagonaler Teil der Koeffizientenmatrix Z_y
 	Z_dy = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y)); // invertierter diagonaler Teil der Koeffizientenmatrix Z_y
 	Px = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 	Py = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
@@ -148,8 +140,10 @@ void next_frame()
 	current_posx = current_posy = 0;
 
 	// ab akt_frame - 3 Einträge löschen!
-	for (int n = 0; n < 2; ++n)
+	for (int n = 0; n < 10; ++n)
 	{
+		Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y));
+		Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y));
 		if (n == 0)
 		{
 			frames.at(akt_frame) = frames.at(akt_frame - 1); // Mesh zum aktuellen Zeitpunkt = vorheriger Zeitpunkt
@@ -163,14 +157,21 @@ void next_frame()
 				}
 			}
 		}
-		pressure_x.at(1) = pressure_x.at(2);
+		pressure.at(0) = pressure.at(1);
+		pressure.at(1) = pressure.at(2);
+		pressure.at(2) = vector<vector<long double>>(size_x, vector<long double>(size_y));
 		pressure_x.at(0) = pressure_x.at(1);
-		pressure_y.at(1) = pressure_y.at(2);
+		pressure_x.at(1) = pressure_x.at(2);
+		pressure_x.at(2) = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 		pressure_y.at(0) = pressure_y.at(1);
-		vel_x.at(1) = vel_x.at(2);
+		pressure_y.at(1) = pressure_y.at(2);
+		pressure_y.at(2) = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 		vel_x.at(0) = vel_x.at(1);
-		vel_y.at(1) = vel_y.at(2);
+		vel_x.at(1) = vel_x.at(2);
+		vel_x.at(2) = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 		vel_y.at(0) = vel_y.at(1);
+		vel_y.at(1) = vel_y.at(2);
+		vel_y.at(2) = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 		for (int i = 0; i < size_x; ++i)
 		{
 			for (int j = 0; j < size_y; ++j)
@@ -179,10 +180,6 @@ void next_frame()
 					continue;
 				const size_t z = i * size_y + j;
 				size_t zz = z - 2 * size_y;
-				/*
-				if (z < 0)
-					z = 0; // nur, wenn auch boundary-punkte überprüft werden
-				*/
 				koeff_x.at(z).at(z) = 3 / (2 * (*time_stp));
 				koeff_y.at(z).at(z) = 3 / (2 * (*time_stp));
 				// Bereich für x-Komponente:
@@ -286,17 +283,20 @@ void next_frame()
 						Z_dy.at(x).at(y) = 1 / koeff_y.at(x).at(y);
 					continue;
 				}
+				Z_nx.at(x).at(y) = koeff_x.at(x).at(y);
+				Z_ny.at(x).at(y) = koeff_y.at(x).at(y);
 			}
 		}
-		Z_nx = (koeff_x + ((-1) / Z_dx)) * vel_x.at(2);
-		Z_ny = (koeff_y + ((-1) / Z_dy)) * vel_y.at(2);
+		Z_nx = Z_nx * vel_x.at(2);
+		Z_ny = Z_ny * vel_y.at(2);
 		Px = (-1) * grav + geschw_rest_x;
 		Py = geschw_rest_y;
 		for (int i = 0; i < 100; ++i)
 		{
 			//for (int j = 0; j < 100; ++j)
 			{
-				cout << (koeff_x + ((-1) / Z_dx)).at(i).at(i) << " ";
+				if(n==9)
+				cout << Z_nx.at(i).at(0) << endl;
 			}
 			//cout << endl;
 		}
@@ -909,7 +909,7 @@ vector<vector<long double>> operator*(const long double scalar, const vector<vec
 }
 
 vector<vector<long double>> operator*(const vector<vector<long double>>& faktor1, vector<vector<long double>>& faktor2)
-{
+{ // Matrix-Multipliaktion für zwei 2d-vectors
 	if (faktor1.at(0).size() != faktor2.size())
 	{
 		cerr << "Die beiden Matrizen haben nicht die selbe Größe!" << endl;
@@ -920,7 +920,10 @@ vector<vector<long double>> operator*(const vector<vector<long double>>& faktor1
 	{
 		for (int j = 0; j < faktor2.at(0).size(); ++j)
 		{
-			erg.at(i).at(j) = faktor1.at(i).at(j) * faktor2.at(i).at(j);
+			for (int k = 0; k < faktor2.size(); ++k)
+			{
+				erg.at(i).at(j) += faktor1.at(i).at(k) * faktor2.at(k).at(j);
+			}	
 		}
 	}
 	return erg;
