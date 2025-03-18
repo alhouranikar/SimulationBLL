@@ -172,77 +172,14 @@ void next_frame()
 		vel_y.at(0) = vel_y.at(1);
 		vel_y.at(1) = vel_y.at(2);
 		vel_y.at(2) = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
-		for (int i = 0; i < size_x; ++i)
-		{
-			for (int j = 0; j < size_y; ++j)
-			{
-				if (is_boundary.at(i).at(j))
-					continue;
-				const size_t z = i * size_y + j;
-				size_t zz = z - 2 * size_y;
-				koeff_x.at(z).at(z) = 3 / (2 * (*time_stp));
-				koeff_y.at(z).at(z) = 3 / (2 * (*time_stp));
-				// Bereich für x-Komponente:
-				// Geschwindigkeit in y-Richtung für x-Komponente
-				koeff_x.at(z).at(z - 2) = vel_y.at(1).at(z - 2 * size_y).at(0) / (12 * dist);
-				koeff_x.at(z).at(z - 1) = vel_y.at(1).at(z - size_y).at(0) / (12 * dist);
-				koeff_x.at(z).at(z + 1) = 8 * vel_y.at(1).at(z + size_y).at(0) / (12 * dist);
-				koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(z + 2 * size_y).at(0) / (12 * dist);
-				// Geschwindigkeit in x-Richtung für x-Komponente und für y-Komponente
-				if (zz >= 0)
-				{
-					koeff_x.at(z).at(zz) = vel_x.at(1).at(zz).at(0) / (12 * dist);
-					koeff_y.at(z).at(zz) = vel_x.at(1).at(zz).at(0) / (12 * dist);
-				}
-				zz = z - size_y;
-				if (zz >= 0)
-				{
-					koeff_x.at(z).at(zz) = -8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
-					koeff_y.at(z).at(zz) = -8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
-				}
-				zz = z + size_y;
-				if (zz <= size_y * size_x - 1)
-				{
-					koeff_x.at(z).at(zz) = 8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
-					koeff_y.at(z).at(zz) = 8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
-				}
-				zz = z + 2 * size_y;
-				if (zz <= size_y * size_x - 1)
-				{
-					koeff_x.at(z).at(zz) = -vel_x.at(1).at(zz).at(0) / (12 * dist);
-					koeff_y.at(z).at(zz) = -vel_x.at(1).at(zz).at(0) / (12 * dist);
-				}
-				// Bereich für y-Komponente
-				// Geschwindigkeit in y-Richtung für y-Komponente
-				koeff_y.at(z).at(z - 2) = vel_y.at(1).at(z - 2).at(0) / (12 * dist);
-				koeff_y.at(z).at(z - 1) = -8 * vel_y.at(1).at(z - 1).at(0) / (12 * dist);
-				koeff_y.at(z).at(z + 1) = 8 * vel_y.at(1).at(z + 1).at(0) / (12 * dist);
-				koeff_y.at(z).at(z + 2) = -vel_y.at(1).at(z + 2).at(0) / (12 * dist);
-				// Druckgradienten in x/y-Richtung berechnen:
-				pressure_x.at(2).at(z).at(0) = (pressure.at(1).at(i - 2).at(j) - 8 * pressure.at(1).at(i - 1).at(j) + 8 * pressure.at(1).at(i + 1).at(j) - pressure.at(1).at(i + 2).at(j)) / (12 * dist);
-				pressure_y.at(2).at(z).at(0) = (pressure.at(1).at(i).at(j - 2) - 8 * pressure.at(1).at(i).at(j - 1) + 8 * pressure.at(1).at(i).at(j + 1) - pressure.at(1).at(i).at(j + 2)) / (12 * dist);
-				// Gravitationskraft und andere externe Kräfte werden hier gespeichert
-				grav.at(z).at(0) = density * 9.81;
-				// zeitliche Entwicklung der Geschwindigkeit
- 				if(akt_frame - 2 < 0) // Fall akt_frame - 1 < 0 kann nicht eintreten, da next_frame erst ab dem Frame 1 verwendet wird
-				{ // Buffer-overflow, da akt_frame eine positive Zahl sein muss (behoben)
-					geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1);
-					geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2);
-				}
-				else
-				{
-					geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 2).at(i).at(j).at(1);
-					geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 2).at(i).at(j).at(2);
-				}
-			}
-		}
+		init_koeff();
 
 		//Geschwindigkeit in x-Richtung berechnen
 		temp_pr = grav + (-1) * pressure_x.at(2) + (-1) * geschw_rest_x; // Gravitation als externe Kraft nur in x-Richtung hinzufügen
 		temp_guess = vel_x.at(1); // die erste Abschätzung für conjuage-gradient ist die Geschwindigkeit zur vorherigen Iteration
 		vel_x.at(2) = Matrix::cgm(koeff_x, temp_pr, temp_guess);
 
-		temp_pr = (-1) * pressure_y.at(2) + (-1) * geschw_rest_x;
+		temp_pr = (-1) * pressure_y.at(2) + (-1) * geschw_rest_y;
 
 		//Geschwindigkeit in y-Richtung berechnen
 		temp_guess = vel_y.at(1);
@@ -483,9 +420,6 @@ void advect()
 			past_posy_x = current_posy + 0.5/*da x- und y-Geschwindigkeit versetzt gespeichert sind*/ - calc_avg(2) * (*time_stp);
 			past_posx_y = current_posx + 0.5 - calc_avg(1) * (*time_stp);
 			past_posy_y = current_posy - frames.at(akt_frame).at(current_posx).at(current_posy).at(2) * (*time_stp); // hier in y-Richtung
-			vector<long double> erg = interpolate(); // interpolierte Geschwindigkeit an der vorherigen Position
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(1) = erg.at(0);
-			frames.at(akt_frame).at(current_posx).at(current_posy).at(2) = erg.at(1);
 		}
 	}
 }
@@ -710,117 +644,156 @@ long double calc_avg(int i)
 	return (erg.at(0) + erg.at(1) + erg.at(2) + erg.at(3)) / nachbarn;
 }
 
-vector<long double> interpolate()
-{ // sucht die näheste Zelle zum vorherigen Zeitpunkt von dem Partikel, welches sich jetzt an der Stelle current_posx und current_posy befindet
-
-	// TODO: Fehler, da am Rand die x- und y-Positionen negativ sein müssten (Rand definieren, nach CFL-Bedingung kann ein Partikel max eine Zelle pro Zeitschritt vorankommen)
-	// für solid boundaries kann code bestehen bleiben, noch zusätzlich inflow / outflow edges
-	
-	vector<long double> erg(2);
-	vector<long double> values(8);
-	int untere_grx_x, untere_gry_x, obere_grx_x, obere_gry_x, untere_grx_y, untere_gry_y, obere_grx_y, obere_gry_y;
-	untere_grx_x = trunc(past_posx_x);
-	untere_gry_x = trunc(past_posy_x - 1) + 0.5; /*-1, damit Abstand der Geschwindigkeit in y-Richtung an der unteren Grenze vom Rand der Zelle berücksichtigt wird (siehe Skizze)*/ /*+0,5, da x- und y-Geschwindigkeit versetzt gespeichert sind*/
-	untere_grx_y = trunc(past_posx_y - 1) + 0.5;
-	untere_gry_y = trunc(past_posy_y);
-
-	double deriv_x = calc_avg(2) / frames.at(akt_frame).at(current_posx).at(current_posy).at(1);
-	double deriv_y = frames.at(akt_frame).at(current_posx).at(current_posy).at(2) / calc_avg(1);
-
-	obere_grx_x = untere_grx_x < 0 ? untere_grx_x - 1 : untere_grx_x + 1; // wenn die Grenze kleienr als 0 ist
-	obere_gry_x = untere_gry_x < 0 ? untere_gry_x - 1 : untere_gry_x + 1;
-	obere_grx_y = untere_grx_y < 0 ? untere_grx_y - 1 : untere_grx_y + 1;
-	obere_gry_y = untere_gry_y < 0 ? untere_gry_y - 1 : untere_gry_y + 1;
-
-	// Wenn etwas von der x-Geschwindigkeit außerhalb der boundary ist
-	while (past_posx_x < 0 || is_solid.at(untere_grx_x).at(untere_gry_x) || is_solid.at(untere_grx_x).at(obere_gry_x))
+void init_koeff()
+{
+	// Wenn etwas von den Geschwindigkeiten außerhalb der boundary ist oder eine solid-boundary ist
+	for (int i = 0; i < size_x; ++i)
 	{
-		double temp = (untere_grx_x - past_posx_x);
-		past_posx_x += temp + 0.01 * dist; // auf einer Geraden mit dem Richtungsvektor akt_geschwindigkeit_x / akt_geschwindigkeit_y wird so lange der Punkt past_posx_x proportional zu past_posy_x verfolgt, bis die Grenzen innerhalb der Domain sind
-		past_posy_x += deriv_x * (temp + 0.01 * dist); // damit Proportionalität beibehalten wird
-		untere_grx_x = trunc(past_posx_x);
-		obere_grx_x = untere_grx_x <= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
-		untere_gry_x = trunc(past_posy_x);
-		obere_gry_x = untere_gry_x <= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
+		for (int j = 0; j < size_y; ++j)
+		{
+			if (is_boundary.at(i).at(j))
+				continue;
+			const size_t z = i * size_y + j;
+			size_t zz = z - 2 * size_y;
+			koeff_x.at(z).at(z) = 3 / (2 * (*time_stp));
+			koeff_y.at(z).at(z) = 3 / (2 * (*time_stp));
+			// Geschwindigkeit in x-Richtung für x-Komponente und für y-Komponente
+			if (zz >= 0 && is_solid.at(i - 2).at(j))
+			{
+				koeff_x.at(z).at(zz) = vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
+			}
+			else if (zz >= 0)
+			{
+				koeff_x.at(z).at(zz) = vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = vel_x.at(1).at(zz).at(0) / (12 * dist);
+			}
+			zz = z - size_y;
+			if (zz >= 0 && is_solid.at(i - 1).at(j))
+			{
+				koeff_x.at(z).at(zz) = -8 * vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = -8 * vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
+			}
+			else if (zz >= 0)
+			{
+				koeff_x.at(z).at(zz) = -8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = -8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
+			}
+			zz = z + 2 * size_y;
+			if (zz <= size_x * size_y - 1 && is_solid.at(i + 2).at(j))
+			{
+				koeff_x.at(z).at(zz) = -vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = -vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
+			}
+			else if (zz <= size_x * size_y - 1)
+			{
+				koeff_x.at(z).at(zz) = -vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = -vel_x.at(1).at(zz).at(0) / (12 * dist);
+			}
+			zz = z + size_y;
+			if (zz <= size_x * size_y - 1 && is_solid.at(i + 1).at(j))
+			{
+				koeff_x.at(z).at(zz) = 8 * vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = 8 * vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
+			}
+			else if (zz <= size_x * size_y - 1)
+			{
+				koeff_x.at(z).at(zz) = 8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_y.at(z).at(zz) = 8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
+			}
+			// Geschwindigkeit in y-Richtung für x-Komponente und für y-Komponente
+			if (z - 2 >= 0 && is_solid.at(i).at(j - 2))
+			{
+				koeff_x.at(z).at(z - 2) = vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - 2) = vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+			}
+			else if (z - 2 >= 0)
+			{
+				koeff_x.at(z).at(z - 2) = vel_y.at(1).at(z - 2).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - 2) = vel_y.at(1).at(z - 2).at(0) / (12 * dist);
+			}
+			if (z - 1 >= 0 && is_solid.at(i).at(j - 2))
+			{
+				koeff_x.at(z).at(z - 1) = -8 * vel_y.at(1).at(z).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - 1) = -8 * vel_y.at(1).at(z).at(0) / (12 * dist);
+			}
+			else if (z - 1 >= 0)
+			{
+				koeff_x.at(z).at(z - 1) = -8 * vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - 1) = -8 * vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+			}
+			if (z + 2 <= size_x * size_y - 1 && is_solid.at(i).at(j + 2))
+			{
+				koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + 2) = -vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+			}
+			else if (z + 2 <= size_x * size_y - 1)
+			{
+				koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(z + 2).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + 2) = -vel_y.at(1).at(z + 2).at(0) / (12 * dist);
+			}
+			if (z + 1 <= size_x * size_y - 1 && is_solid.at(i).at(j + 1))
+			{
+				koeff_x.at(z).at(z + 1) = 8 * vel_y.at(1).at(z).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + 1) = 8 * vel_y.at(1).at(z).at(0) / (12 * dist);
+			}
+			else if (z + 1 <= size_x * size_y - 1)
+			{
+				koeff_x.at(z).at(z + 1) = 8 * vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + 1) = 8 * vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+			}
+			// DRUCK-LÖSER IST NUR MÖGLICH, WENN BOUNDARY PUNKTE RAUSGELASSEN WERDEN
+			// Druckgradienten in x-Richtung berechnen:
+			pressure_x.at(2).at(z).at(0) = 0;
+			if (is_solid.at(i - 2).at(j))
+				pressure_x.at(2).at(z).at(0) += pressure.at(1).at(i - 1).at(j);
+			else
+				pressure_x.at(2).at(z).at(0) += pressure.at(1).at(i - 2).at(j);
+			if (is_solid.at(i - 1).at(j))
+				pressure_x.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i).at(j);
+			else
+				pressure_x.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i - 1).at(j);
+			if (is_solid.at(i + 2).at(j))
+				pressure_x.at(2).at(z).at(0) -= pressure.at(1).at(i + 1).at(j);
+			else
+				pressure_x.at(2).at(z).at(0) -= pressure.at(1).at(i + 2).at(j);
+			if (is_solid.at(i + 1).at(j))
+				pressure_x.at(2).at(z).at(0) += 8 * pressure.at(1).at(i).at(j);
+			else
+				pressure_x.at(2).at(z).at(0) += 8 * pressure.at(1).at(i + 1).at(j);
+			// Druckgradienten in y-Richtung berechnen:
+			pressure_y.at(2).at(z).at(0) = 0;
+			if (is_solid.at(i).at(j - 2))
+				pressure_y.at(2).at(z).at(0) += pressure.at(1).at(i).at(j - 1);
+			else
+				pressure_y.at(2).at(z).at(0) += pressure.at(1).at(i).at(j - 2);
+			if (is_solid.at(i).at(j - 1))
+				pressure_y.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i).at(j);
+			else
+				pressure_y.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i).at(j - 1);
+			if (is_solid.at(i).at(j + 2))
+				pressure_y.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j + 1);
+			else
+				pressure_y.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j + 2);
+			if (is_solid.at(i).at(j + 1))
+				pressure_y.at(2).at(z).at(0) += 8 * pressure.at(1).at(i).at(j);
+			else
+				pressure_y.at(2).at(z).at(0) += 8 * pressure.at(1).at(i).at(j + 1);
+			// Gravitationskraft und andere externe Kräfte werden hier gespeichert
+			grav.at(z).at(0) = density * 9.81;
+			// zeitliche Entwicklung der Geschwindigkeit
+			if (akt_frame - 2 < 0) // Fall akt_frame - 1 < 0 kann nicht eintreten, da next_frame erst ab dem Frame 1 verwendet wird
+			{ // Buffer-overflow, da akt_frame eine positive Zahl sein muss (behoben)
+				geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1);
+				geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2);
+			}
+			else
+			{
+				geschw_rest_x.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(1) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 2).at(i).at(j).at(1);
+				geschw_rest_y.at(z).at(0) = (-4 / (12 * (*time_stp))) * frames.at(akt_frame - 1).at(i).at(j).at(2) + (1 / (12 * (*time_stp))) * frames.at(akt_frame - 2).at(i).at(j).at(2);
+			}
+		}
 	}
-	while (past_posx_x > size_x - 1 || is_solid.at(obere_grx_x).at(untere_gry_x) || is_solid.at(obere_grx_x).at(obere_gry_x))
-	{
-		double temp = (untere_grx_x - past_posx_x);
-		past_posx_x += temp - 0.01 * dist; 
-		past_posy_x += deriv_x * (temp - 0.01 * dist);
-		untere_grx_x = trunc(past_posx_x);
-		obere_grx_x = untere_grx_x >= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
-		untere_gry_x = trunc(past_posy_x);
-		obere_gry_x = untere_gry_x >= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
-	}
-	while (past_posy_x < 0 || is_solid.at(obere_grx_x).at(untere_gry_x) || is_solid.at(untere_grx_x).at(untere_gry_x))
-	{
-		double temp = (untere_gry_x - past_posy_x);
-		past_posy_x += temp + 0.01 * dist;
-		past_posx_x += (1 / deriv_x) * (temp + 0.01 * dist); // hier Kehrwert von deriv_x, damit korrektes dx hier berechnet werden kann (jetzt ist es dx/dy * dy = dx)
-		untere_grx_x = trunc(past_posx_x);
-		obere_grx_x = untere_grx_x <= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
-		untere_gry_x = trunc(past_posy_x);
-		obere_gry_x = untere_gry_x <= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
-	}
-	while (past_posy_x > size_y || is_solid.at(obere_grx_x).at(obere_gry_x) || is_solid.at(untere_grx_x).at(obere_gry_x))
-	{
-		double temp = (untere_grx_x - past_posx_x);
-		past_posx_x += temp - 0.01 * dist;
-		past_posy_x += (1 / deriv_x) * (temp - 0.01 * dist);
-		untere_grx_x = trunc(past_posx_x);
-		obere_grx_x = untere_grx_x >= 0 ? untere_grx_x - 1 : untere_grx_x + 1;
-		untere_gry_x = trunc(past_posy_x);
-		obere_gry_x = untere_gry_x >= 0 ? untere_gry_x - 1 : untere_gry_x + 1;
-	}
-	// hier y-Geschwindigkeit:
-	while (past_posx_y < 0 || is_solid.at(untere_grx_y).at(untere_gry_y) || is_solid.at(untere_grx_y).at(obere_gry_y))
-	{
-		double temp = (untere_grx_y - past_posx_y);
-		past_posx_y += temp + 0.01 * dist; // auf einer Geraden mit dem Richtungsvektor akt_geschwindigkeit_y / akt_geschwindigkeit_y wird so lange der Punkt past_posx_y proportional zu past_posy_y verfolgt, bis die Grenzen innerhalb der Domain sind
-		past_posy_y += deriv_y * (temp + 0.01 * dist); // damit Proportionalität beibehalten wird
-		untere_grx_y = trunc(past_posx_y);
-		obere_grx_y = untere_grx_y <= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
-		untere_gry_y = trunc(past_posy_y);
-		obere_gry_y = untere_gry_y <= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
-	}
-	while (past_posx_y > size_y - 1 || is_solid.at(obere_grx_y).at(untere_gry_y) || is_solid.at(obere_grx_y).at(obere_gry_y))
-	{
-		double temp = (untere_grx_y - past_posx_y);
-		past_posx_y += temp - 0.01 * dist;
-		past_posy_y += deriv_y * (temp - 0.01 * dist);
-		untere_grx_y = trunc(past_posx_y);
-		obere_grx_y = untere_grx_y >= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
-		untere_gry_y = trunc(past_posy_y);
-		obere_gry_y = untere_gry_y >= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
-	}
-	while (past_posy_y < 0 || is_solid.at(obere_grx_y).at(untere_gry_y) || is_solid.at(untere_grx_y).at(untere_gry_y))
-	{
-		double temp = (untere_gry_y - past_posy_y);
-		past_posy_y += temp + 0.01 * dist;
-		past_posx_y += (1 / deriv_y) * (temp + 0.01 * dist); // hier Kehrwert von deriv_y, damit korrektes dx hier berechnet werden kann (jetzt ist es dx/dy * dy = dx)
-		untere_grx_y = trunc(past_posx_y);
-		obere_grx_y = untere_grx_y <= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
-		untere_gry_y = trunc(past_posy_y);
-		obere_gry_y = untere_gry_y <= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
-	}
-	while (past_posy_y > size_y || is_solid.at(obere_grx_y).at(obere_gry_y) || is_solid.at(untere_grx_y).at(obere_gry_y))
-	{
-		double temp = (untere_grx_y - past_posx_y);
-		past_posx_y += temp - 0.01 * dist;
-		past_posy_y += (1 / deriv_y) * (temp - 0.01 * dist);
-		untere_grx_y = trunc(past_posx_y);
-		obere_grx_y = untere_grx_y >= 0 ? untere_grx_y - 1 : untere_grx_y + 1;
-		untere_gry_y = trunc(past_posy_y);
-		obere_gry_y = untere_gry_y >= 0 ? untere_gry_y - 1 : untere_gry_y + 1;
-	}
-	obere_grx_x = untere_grx_x + 1;
-	obere_gry_x = untere_gry_x + 1;
-	obere_grx_y = untere_grx_y + 1;
-	obere_gry_y = untere_gry_y + 1;
-	erg.at(0) = (obere_gry_x - past_posy_x) * (past_posx_x - untere_grx_x) * frames.at(akt_frame - 1).at(obere_grx_x).at(untere_gry_x).at(1) + (past_posx_x - untere_grx_x) * (past_posy_x - untere_gry_x) * frames.at(akt_frame - 1).at(obere_grx_x).at(obere_gry_x).at(1) + (obere_grx_x - past_posx_x) * (obere_gry_x - past_posy_x) * frames.at(akt_frame - 1).at(untere_grx_x).at(untere_gry_x).at(1) + (obere_grx_x - past_posx_x) * (past_posy_x - untere_gry_x) * frames.at(akt_frame - 1).at(untere_grx_x).at(obere_gry_x).at(1);
-	erg.at(1) = (obere_gry_y - past_posy_y) * (past_posx_y - untere_grx_y) * frames.at(akt_frame - 1).at(obere_grx_y).at(untere_gry_y).at(2) + (past_posx_y - untere_grx_y) * (past_posy_y - untere_gry_y) * frames.at(akt_frame - 1).at(obere_grx_y).at(obere_gry_y).at(2) + (obere_grx_y - past_posx_y) * (obere_gry_y - past_posy_y) * frames.at(akt_frame - 1).at(untere_grx_y).at(untere_gry_y).at(2) + (obere_grx_y - past_posx_y) * (past_posy_y - untere_gry_y) * frames.at(akt_frame - 1).at(untere_grx_y).at(obere_gry_y).at(2); // interpolierte Geschwindigkeit in y-Richtung von y-Geschwindigkeit
-	return erg;
 }
 
 bool is_outside(int past_x, int past_y, long double u, long double v)

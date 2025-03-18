@@ -89,7 +89,7 @@ vector<long double> get_nval(int w); // FÜR TESTZWECKE, Ausgabe der benachbarten
 
 long double calc_avg(int i); // Berechnung des Durchschnitts benachbarter Werte
 
-vector<long double> interpolate(); // Funktion, um die der Ursprungsposition der Teilchen nähesten Zelle zu finden
+void init_koeff(); // Initialisierung der Koeffizientenmatrizen für die Berechnung der Geschwindigkeit in x- bzw. y-Richtung
 
 void ausgabe(); // NUR FÜR TESTZWECKE
 
