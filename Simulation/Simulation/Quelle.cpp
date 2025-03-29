@@ -74,10 +74,6 @@ void set_initial()
 			frames.at(0).at(i).at(j).at(0) = 1;
 			frames.at(0).at(i).at(j).at(1) = 1;
 			frames.at(0).at(i).at(j).at(2) = 1;
-			if (j == 5 && i == 5)
-			{
-				frames.at(0).at(i).at(j).at(1) = 1.8;
-			}
 		}
 		check_umax(frames.at(akt_frame).at(current_posx).at(current_posy)); // Wenn die Geschwindigkeit größer als umax ist, dann neue maximale Geschwindigkeit setzen
 	}
@@ -140,7 +136,7 @@ void next_frame()
 	current_posx = current_posy = 0;
 
 	// ab akt_frame - 3 Einträge löschen!
-	for (int n = 0; n < 10; ++n)
+	for (int n = 0; n < 20; ++n)
 	{
 		Z_nx = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y));
 		Z_ny = vector<vector<long double>>(size_x * size_y, vector<long double>(size_x * size_y));
@@ -152,8 +148,8 @@ void next_frame()
 				for (int h = 0; h < size_y; ++h)
 				{ // die anfängliche Abschätzung der Geschwindigkeit ist durch die Geschwindigkeit zum vorherigen Frame gegeben // VERBESSERUNG: erste Abschätzung ist vorheriger Zeitpunkt mit zusätzlicher Diskretisierung
 					const size_t z = g * size_y + h;
-					vel_x.at(2).at(z).at(0) = frames.at(akt_frame - 1).at(g).at(h).at(1);
-					vel_y.at(2).at(z).at(0) = frames.at(akt_frame - 1).at(g).at(h).at(2);
+					vel_x.at(2).at(z).at(0) = frames.at(akt_frame).at(g).at(h).at(1);
+					vel_y.at(2).at(z).at(0) = frames.at(akt_frame).at(g).at(h).at(2);
 				}
 			}
 		}
@@ -174,14 +170,14 @@ void next_frame()
 		vel_y.at(2) = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 		init_koeff();
 
-		//Geschwindigkeit in x-Richtung berechnen
-		temp_pr = grav + (-1) * pressure_x.at(2) + (-1) * geschw_rest_x; // Gravitation als externe Kraft nur in x-Richtung hinzufügen
+		// Geschwindigkeit in x-Richtung berechnen
+		temp_pr = (-1) * pressure_x.at(2) + (-1) * geschw_rest_x; // Gravitation als externe Kraft nur in x-Richtung hinzufügen
 		temp_guess = vel_x.at(1); // die erste Abschätzung für conjuage-gradient ist die Geschwindigkeit zur vorherigen Iteration
 		vel_x.at(2) = Matrix::cgm(koeff_x, temp_pr, temp_guess);
 
 		temp_pr = (-1) * pressure_y.at(2) + (-1) * geschw_rest_y;
 
-		//Geschwindigkeit in y-Richtung berechnen
+		// Geschwindigkeit in y-Richtung berechnen
 		temp_guess = vel_y.at(1);
 		vel_y.at(2) = Matrix::cgm(koeff_y, temp_pr, temp_guess);
 
@@ -226,17 +222,8 @@ void next_frame()
 		}
 		Z_nx = Z_nx * vel_x.at(2);
 		Z_ny = Z_ny * vel_y.at(2);
-		Px = (-1) * grav + geschw_rest_x;
-		Py = geschw_rest_y;
-		for (int i = 0; i < 100; ++i)
-		{
-			//for (int j = 0; j < 100; ++j)
-			{
-				if(n==9)
-				cout << Z_nx.at(i).at(0) << endl;
-			}
-			//cout << endl;
-		}
+		Px = /*(-1) * grav + */ (-1) * geschw_rest_x + (-1) * Z_nx;
+		Py = (-1) * geschw_rest_y + (-1) * Z_ny;
 		for (int i = 0; i < size_x; ++i)
 		{
 			for (int j = 0; j < size_y; ++j)
@@ -248,10 +235,18 @@ void next_frame()
 				Py.at(z).at(0) -= (pressure.at(2).at(i).at(j - 2) - 8 * pressure.at(2).at(i).at(j - 1) + 8 * pressure.at(2).at(i).at(j + 1) - pressure.at(2).at(i).at(j + 2)) / (12 * dist);
 			}
 		}
-		Ux = Z_dx * Px + (-1) * Z_dx * Z_nx;
-		Uy = Z_dy * Py + (-1) * Z_dy * Z_ny;
+		Ux = Z_dx * Px + Z_dx * Px; // hier weiter, warum nan(inf), wenn das Vorzeichen bei Z_dx geändert wird?
+		Uy = Z_dy * Py + Z_dy * Py;
 		vel_x.at(2) = Ux;
 		vel_y.at(2) = Uy;
+		if (n == 99)
+		{
+			for (int i = 0; i < size_x * size_y; ++i)
+			{
+				cout << vel_x.at(2).at(i).at(0) - vel_x.at(1).at(i).at(0) << " ";
+			}
+			cout << endl;
+		}
 		// HIER WEITER : IMPLEMENTIERUNG VON GLEICHUNG 4.8
 	}
 	for (int i = 0; i < size_x; ++i)
@@ -658,54 +653,82 @@ void init_koeff()
 			koeff_x.at(z).at(z) = 3 / (2 * (*time_stp));
 			koeff_y.at(z).at(z) = 3 / (2 * (*time_stp));
 			// Geschwindigkeit in x-Richtung für x-Komponente und für y-Komponente
-			if (zz >= 0 && is_solid.at(i - 2).at(j))
+			if (z - 2 * size_y >= 0 && is_solid.at(i - 2).at(j))
 			{
-				koeff_x.at(z).at(zz) = vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
+				if (is_solid.at(i - 1).at(j))
+				{
+					koeff_x.at(z).at(z - 2 * size_y) = vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
+					koeff_y.at(z).at(z - 2 * size_y) = vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
+					goto z_min_size_y;
+				}
+				else
+				{
+					koeff_x.at(z).at(z - 2 * size_y) = vel_x.at(1).at(z).at(0) / (12 * dist);
+					koeff_y.at(z).at(z - 2 * size_y) = vel_x.at(1).at(z).at(0) / (12 * dist);
+				}
 			}
-			else if (zz >= 0)
+			else if (z - 2 * size_y >= 0)
 			{
-				koeff_x.at(z).at(zz) = vel_x.at(1).at(zz).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_x.at(z).at(z - 2 * size_y) = vel_x.at(1).at(z - 2 * size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - 2 * size_y) = vel_x.at(1).at(z - 2 * size_y).at(0) / (12 * dist);
 			}
-			zz = z - size_y;
-			if (zz >= 0 && is_solid.at(i - 1).at(j))
+			if (z - size_y >= 0 && is_solid.at(i - 1).at(j))
 			{
-				koeff_x.at(z).at(zz) = -8 * vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = -8 * vel_x.at(1).at(zz + size_y).at(0) / (12 * dist);
+				z_min_size_y:
+				koeff_x.at(z).at(z - size_y) = -8 * vel_x.at(1).at(z).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - size_y) = -8 * vel_x.at(1).at(z).at(0) / (12 * dist);
 			}
-			else if (zz >= 0)
+			else if (z - size_y >= 0)
 			{
-				koeff_x.at(z).at(zz) = -8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = -8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_x.at(z).at(z - size_y) = -8 * vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(z - size_y) = -8 * vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
 			}
 			zz = z + 2 * size_y;
-			if (zz <= size_x * size_y - 1 && is_solid.at(i + 2).at(j))
+			if (z + 2 * size_y <= size_x * size_y - 1 && is_solid.at(i + 2).at(j))
 			{
-				koeff_x.at(z).at(zz) = -vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = -vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
+				if (is_solid.at(i + 1).at(j))
+				{
+					koeff_x.at(z).at(z + 2 * size_y) = -vel_x.at(1).at(z).at(0) / (12 * dist);
+					koeff_y.at(z).at(z + 2 * size_y) = -vel_x.at(1).at(z).at(0) / (12 * dist);
+					goto z_plus_size_y;
+				}
+				else
+				{
+					koeff_x.at(z).at(z + 2 * size_y) = -vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
+					koeff_y.at(z).at(z + 2 * size_y) = -vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
+				}
 			}
-			else if (zz <= size_x * size_y - 1)
+			else if (z + 2 * size_y <= size_x * size_y - 1)
 			{
-				koeff_x.at(z).at(zz) = -vel_x.at(1).at(zz).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = -vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_x.at(z).at(z + 2 * size_y) = -vel_x.at(1).at(z - 2 * size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + 2 * size_y) = -vel_x.at(1).at(z - 2 * size_y).at(0) / (12 * dist);
 			}
 			zz = z + size_y;
-			if (zz <= size_x * size_y - 1 && is_solid.at(i + 1).at(j))
+			if (z + size_y <= size_x * size_y - 1 && is_solid.at(i + 1).at(j))
 			{
-				koeff_x.at(z).at(zz) = 8 * vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = 8 * vel_x.at(1).at(zz - size_y).at(0) / (12 * dist);
+				z_plus_size_y:
+				koeff_x.at(z).at(z + size_y) = 8 * vel_x.at(1).at(z).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + size_y) = 8 * vel_x.at(1).at(z).at(0) / (12 * dist);
 			}
-			else if (zz <= size_x * size_y - 1)
+			else if (z + size_y <= size_x * size_y - 1)
 			{
-				koeff_x.at(z).at(zz) = 8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
-				koeff_y.at(z).at(zz) = 8 * vel_x.at(1).at(zz).at(0) / (12 * dist);
+				koeff_x.at(z).at(z + size_y) = 8 * vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
+				koeff_y.at(z).at(z + size_y) = 8 * vel_x.at(1).at(z - size_y).at(0) / (12 * dist);
 			}
 			// Geschwindigkeit in y-Richtung für x-Komponente und für y-Komponente
 			if (z - 2 >= 0 && is_solid.at(i).at(j - 2))
 			{
-				koeff_x.at(z).at(z - 2) = vel_y.at(1).at(z - 1).at(0) / (12 * dist);
-				koeff_y.at(z).at(z - 2) = vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+				if (is_solid.at(i).at(j - 1))
+				{
+					koeff_x.at(z).at(z - 2) = vel_y.at(1).at(z).at(0) / (12 * dist);
+					koeff_y.at(z).at(z - 2) = vel_y.at(1).at(z).at(0) / (12 * dist);
+					goto z_minus_1;
+				}
+				else
+				{
+					koeff_x.at(z).at(z - 2) = vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+					koeff_y.at(z).at(z - 2) = vel_y.at(1).at(z - 1).at(0) / (12 * dist);
+				}
 			}
 			else if (z - 2 >= 0)
 			{
@@ -714,6 +737,7 @@ void init_koeff()
 			}
 			if (z - 1 >= 0 && is_solid.at(i).at(j - 2))
 			{
+				z_minus_1:
 				koeff_x.at(z).at(z - 1) = -8 * vel_y.at(1).at(z).at(0) / (12 * dist);
 				koeff_y.at(z).at(z - 1) = -8 * vel_y.at(1).at(z).at(0) / (12 * dist);
 			}
@@ -724,8 +748,17 @@ void init_koeff()
 			}
 			if (z + 2 <= size_x * size_y - 1 && is_solid.at(i).at(j + 2))
 			{
-				koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(z + 1).at(0) / (12 * dist);
-				koeff_y.at(z).at(z + 2) = -vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+				if (is_solid.at(i).at(j + 1))
+				{
+					koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(z).at(0) / (12 * dist);
+					koeff_y.at(z).at(z + 2) = -vel_y.at(1).at(z).at(0) / (12 * dist);
+					goto z_plus_1;
+				}
+				else
+				{
+					koeff_x.at(z).at(z + 2) = -vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+					koeff_y.at(z).at(z + 2) = -vel_y.at(1).at(z + 1).at(0) / (12 * dist);
+				}
 			}
 			else if (z + 2 <= size_x * size_y - 1)
 			{
@@ -734,6 +767,7 @@ void init_koeff()
 			}
 			if (z + 1 <= size_x * size_y - 1 && is_solid.at(i).at(j + 1))
 			{
+				z_plus_1:
 				koeff_x.at(z).at(z + 1) = 8 * vel_y.at(1).at(z).at(0) / (12 * dist);
 				koeff_y.at(z).at(z + 1) = 8 * vel_y.at(1).at(z).at(0) / (12 * dist);
 			}
@@ -746,39 +780,107 @@ void init_koeff()
 			// Druckgradienten in x-Richtung berechnen:
 			pressure_x.at(2).at(z).at(0) = 0;
 			if (is_solid.at(i - 2).at(j))
-				pressure_x.at(2).at(z).at(0) += pressure.at(1).at(i - 1).at(j);
+			{
+				if (is_solid.at(i - 1).at(j))
+				{
+					pressure_x.at(2).at(z).at(0) += pressure.at(1).at(i).at(j);
+					goto i_min_1;
+				}
+				else
+				{
+					pressure_x.at(2).at(z).at(0) += pressure.at(1).at(i - 1).at(j);
+				}
+			}
 			else
+			{
 				pressure_x.at(2).at(z).at(0) += pressure.at(1).at(i - 2).at(j);
+			}
 			if (is_solid.at(i - 1).at(j))
+			{
+			i_min_1:
 				pressure_x.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i).at(j);
+			}
 			else
+			{
 				pressure_x.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i - 1).at(j);
+			}
 			if (is_solid.at(i + 2).at(j))
-				pressure_x.at(2).at(z).at(0) -= pressure.at(1).at(i + 1).at(j);
+			{
+				if (is_solid.at(i + 1).at(j))
+				{
+					pressure_x.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j);
+					goto i_plus_1;
+				}
+				else
+				{
+					pressure_x.at(2).at(z).at(0) -= pressure.at(1).at(i + 1).at(j);
+				}
+			}
 			else
+			{
 				pressure_x.at(2).at(z).at(0) -= pressure.at(1).at(i + 2).at(j);
+			}
 			if (is_solid.at(i + 1).at(j))
+			{
+				i_plus_1:
 				pressure_x.at(2).at(z).at(0) += 8 * pressure.at(1).at(i).at(j);
+			}
 			else
+			{
 				pressure_x.at(2).at(z).at(0) += 8 * pressure.at(1).at(i + 1).at(j);
+			}
 			// Druckgradienten in y-Richtung berechnen:
 			pressure_y.at(2).at(z).at(0) = 0;
 			if (is_solid.at(i).at(j - 2))
-				pressure_y.at(2).at(z).at(0) += pressure.at(1).at(i).at(j - 1);
+			{
+				if (is_solid.at(i).at(j - 1))
+				{
+					pressure_y.at(2).at(z).at(0) += pressure.at(1).at(i).at(j);
+					goto j_minus_1;
+				}
+				else
+				{
+					pressure_y.at(2).at(z).at(0) += pressure.at(1).at(i).at(j - 1);
+				}
+			}
 			else
+			{
 				pressure_y.at(2).at(z).at(0) += pressure.at(1).at(i).at(j - 2);
+			}
 			if (is_solid.at(i).at(j - 1))
+			{
+				j_minus_1:
 				pressure_y.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i).at(j);
+			}
 			else
+			{
 				pressure_y.at(2).at(z).at(0) -= 8 * pressure.at(1).at(i).at(j - 1);
+			}
 			if (is_solid.at(i).at(j + 2))
-				pressure_y.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j + 1);
+			{
+				if (is_solid.at(i).at(j + 1))
+				{
+					pressure_y.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j);
+					goto j_plus_1;
+				}
+				else
+				{
+					pressure_y.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j + 1);
+				}
+			}
 			else
+			{
 				pressure_y.at(2).at(z).at(0) -= pressure.at(1).at(i).at(j + 2);
+			}
 			if (is_solid.at(i).at(j + 1))
+			{
+				j_plus_1:
 				pressure_y.at(2).at(z).at(0) += 8 * pressure.at(1).at(i).at(j);
+			}
 			else
+			{
 				pressure_y.at(2).at(z).at(0) += 8 * pressure.at(1).at(i).at(j + 1);
+			}
 			// Gravitationskraft und andere externe Kräfte werden hier gespeichert
 			grav.at(z).at(0) = density * 9.81;
 			// zeitliche Entwicklung der Geschwindigkeit
@@ -1023,7 +1125,7 @@ vector<vector<long double>> Matrix::cgm(vector<vector<long double>>& koeff, vect
 	long double temp4;
 	long double alpha;
 	long double beta;
-	for (int i = 0; i < sol.size(); ++i) // REMOVE BEFORE FLIGHT
+	for (int i = 0; i < sol.size(); ++i)
 	{
 		rest = next_rest;
 		if (i == 0)
