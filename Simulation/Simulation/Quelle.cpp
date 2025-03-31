@@ -56,7 +56,7 @@ void set_initial()
 	// Beispiel
 	size_x = 10;
 	size_y = 10;
-	umax = 2.0; // MUSS SCHON VOR DER ERSTELLUNG DES MESHS BEKANNT SEIN, TEIL DER ANFANGSBEDINGUNGEN
+	umax = 1.0; // MUSS SCHON VOR DER ERSTELLUNG DES MESHS BEKANNT SEIN, TEIL DER ANFANGSBEDINGUNGEN
 	start = make_unique<const double>(0.0);
 	ende = make_unique<const double>(1.0);
 	glb_time = 0.0;
@@ -181,6 +181,31 @@ void next_frame()
 		temp_guess = vel_y.at(1);
 		vel_y.at(2) = Matrix::cgm(koeff_y, temp_pr, temp_guess);
 
+		vector<vector<long double>> momentum_x = vector<vector<long double>>(size_x, vector<long double>(size_y));
+
+		for (int i = 0; i < size_x; ++i)
+		{
+			for (int j = 0; j < size_y; ++j)
+			{
+				const size_t z = i * size_y + j;
+				if (is_solid.at(i).at(j))
+					continue;
+				momentum_x.at(i).at(j) = (vel_x.at(2).at(z).at(0) * (vel_x.at(2).at(z - 2 * size_y).at(0) - 8 * vel_x.at(2).at(z - size_y).at(0) + 8 * vel_x.at(2).at(z + size_y).at(0) - vel_x.at(2).at(z + 2 * size_y).at(0)) / (12 * dist));
+				momentum_x.at(i).at(j) += (vel_y.at(2).at(z).at(0) * (vel_y.at(2).at(z - 2).at(0) - 8 * vel_y.at(2).at(z - 1).at(0) + 8 * vel_y.at(2).at(z + 1).at(0) - vel_y.at(2).at(z + 2).at(0)) / (12 * dist));
+				momentum_x.at(i).at(j) += (pressure.at(1).at(z - 2 * size_y).at(0) - 8 * pressure.at(1).at(z - size_y).at(0) + 8 * pressure.at(1).at(z + size_y).at(0) - pressure.at(1).at(z + 2 * size_y).at(0)) / (12 * dist);
+			}
+		}
+
+		cout << "momentum_x:" << endl;
+		for (int i = 0; i < size_x; ++i)
+		{
+			for (int j = 0; j < size_y; ++j)
+			{
+				cout << momentum_x.at(i).at(j) << " ";
+			}
+			cout << endl;
+		}
+
 		// Berechnung des Drucks mithilfe einer Poisson-Gleichung für den Druck und der soeben errrechneten Geschwindigkeit
 		for (int i = 0; i < size_x; ++i)
 		{
@@ -216,14 +241,18 @@ void next_frame()
 						Z_dy.at(x).at(y) = 1 / koeff_y.at(x).at(y);
 					continue;
 				}
-				Z_nx.at(x).at(y) = koeff_x.at(x).at(y);
-				Z_ny.at(x).at(y) = koeff_y.at(x).at(y);
+				//Z_nx.at(x).at(y) = koeff_x.at(x).at(y);
+				//Z_ny.at(x).at(y) = koeff_y.at(x).at(y);
 			}
 		}
-		Z_nx = Z_nx * vel_x.at(2);
-		Z_ny = Z_ny * vel_y.at(2);
-		Px = /*(-1) * grav + */ (-1) * geschw_rest_x + (-1) * Z_nx;
-		Py = (-1) * geschw_rest_y + (-1) * Z_ny;
+		//Z_nx = Z_nx * vel_x.at(1);
+		//Z_ny = Z_ny * vel_y.at(1);
+		Z_nx = Z_dx * vel_x.at(1) + (-1) * koeff_x * vel_x.at(1);
+		Z_ny = Z_dy * vel_y.at(1) + (-1) * koeff_y * vel_y.at(1);
+		Px = /*(-1) * grav + */ (-1) * geschw_rest_x + Z_nx;
+		Py = (-1) * geschw_rest_y + Z_ny;
+		vector<vector<long double>> tempxx = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
+		vector<vector<long double>> tempyy = vector<vector<long double>>(size_x * size_y, vector<long double>(1));
 		for (int i = 0; i < size_x; ++i)
 		{
 			for (int j = 0; j < size_y; ++j)
@@ -231,14 +260,14 @@ void next_frame()
 				if (is_boundary.at(i).at(j))
 					continue;
 				const size_t z = i * size_y + j;
-				Px.at(z).at(0) -= (pressure.at(2).at(i - 2).at(j) - 8 * pressure.at(2).at(i - 1).at(j) + 8 * pressure.at(2).at(i + 1).at(j) - pressure.at(2).at(i + 2).at(j)) / (12 * dist);
-				Py.at(z).at(0) -= (pressure.at(2).at(i).at(j - 2) - 8 * pressure.at(2).at(i).at(j - 1) + 8 * pressure.at(2).at(i).at(j + 1) - pressure.at(2).at(i).at(j + 2)) / (12 * dist);
+				tempxx.at(z).at(0) -= (pressure.at(2).at(i - 2).at(j) - 8 * pressure.at(2).at(i - 1).at(j) + 8 * pressure.at(2).at(i + 1).at(j) - pressure.at(2).at(i + 2).at(j)) / (12 * dist);
+				tempyy.at(z).at(0) -= (pressure.at(2).at(i).at(j - 2) - 8 * pressure.at(2).at(i).at(j - 1) + 8 * pressure.at(2).at(i).at(j + 1) - pressure.at(2).at(i).at(j + 2)) / (12 * dist);
 			}
 		}
-		Ux = Z_dx * Px + Z_dx * Px; // hier weiter, warum nan(inf), wenn das Vorzeichen bei Z_dx geändert wird?
-		Uy = Z_dy * Py + Z_dy * Py;
-		vel_x.at(2) = Ux;
-		vel_y.at(2) = Uy;
+		Ux = Z_dx * Px + Z_dx * tempxx; // hier weiter, warum nan(inf), wenn das Vorzeichen bei Z_dx geändert wird?
+		Uy = Z_dy * Py + Z_dy * tempyy;
+		//vel_x.at(2) = Ux;
+		//vel_y.at(2) = Uy;
 		if (n == 99)
 		{
 			for (int i = 0; i < size_x * size_y; ++i)

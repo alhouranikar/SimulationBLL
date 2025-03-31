@@ -5,14 +5,9 @@ int main()
 	auto begin = chrono::steady_clock::now();
 	set_initial();
 	next_frame();
-	next_frame();
-	next_frame();
-	next_frame();
-	next_frame();
-	next_frame();
 	auto end = chrono::steady_clock::now();
 	ausgabe();
-	cout << "Die Berechnung dauerte " << (chrono::steady_clock::duration(end - begin)).count() * 10e9 << " Sekunden.";
+	cout << "Die Berechnung dauerte " << (chrono::steady_clock::duration(end - begin)).count() * 10e-10 << " Sekunden.";
 	//calc_pressure();
 	/*
 	set_initial();
